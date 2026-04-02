@@ -1,0 +1,13 @@
+# Generated data
+data_sources/csv/
+data_sources/json/
+data_sources/excel/
+data_sources/reviews/
+data_sources/thumbnails/
+data_generation/master_ids.json
+logs/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
