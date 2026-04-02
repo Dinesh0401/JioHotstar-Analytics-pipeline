@@ -188,9 +188,9 @@ Runs on EC2 after SSH. Installation order:
 spark.hadoop.fs.s3a.impl = org.apache.hadoop.fs.s3a.S3AFileSystem
 spark.hadoop.fs.s3a.aws.credentials.provider = com.amazonaws.auth.InstanceProfileCredentialsProvider
 spark.jars.packages = io.delta:delta-spark_2.12:3.1.0,
-                      org.apache.hadoop:hadoop-aws:3.3.4,
+                      org.apache.hadoop:hadoop-aws:3.3.2,
                       org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.1,
-                      mysql:mysql-connector-java:8.0.33,
+                      com.mysql:mysql-connector-j:8.3.0,
                       org.postgresql:postgresql:42.7.3
 ```
 
@@ -204,7 +204,7 @@ Shared module providing `get_spark_session()`:
 - Configures S3A + IAM credentials provider (only when LAKEHOUSE_PATH starts with `s3://`)
 - Registers Delta Lake extensions (`delta.tables`, `delta.enableChangeDataFeed`)
 - Sets shuffle partitions = 4
-- Enables auto-optimize and auto-compact
+- Enables Adaptive Query Execution (AQE) with partition coalescing
 
 ### 6.2 Batch Ingestion
 
@@ -263,6 +263,9 @@ Streaming started independently: `python -m spark.bronze.streaming.ingest_kafka_
 | No deduplication | Duplicates from source preserved intentionally |
 | Audit columns | Every table gets `_ingested_at`, `_source` |
 
+Batch Bronze tables represent the **latest snapshot** of the source systems (not CDC).
+Streaming Bronze tables **append continuously** from Kafka.
+
 ## 7. Delta Lake File Sizing
 
 ### Batch Tables
@@ -271,12 +274,13 @@ Streaming started independently: `python -m spark.bronze.streaming.ingest_kafka_
 
 ### Streaming Table
 - Micro-batch every 30s creates small files over time
-- Auto-optimize enabled: `spark.databricks.delta.autoOptimize.optimizeWrite = true`
-- Auto-compact enabled: `spark.databricks.delta.autoOptimize.autoCompact = true`
-- Manual compaction available after batch simulation:
-  ```python
-  DeltaTable.forPath(spark, path).optimize().executeCompaction()
+- Use Spark Adaptive Query Execution (AQE) to coalesce partitions:
   ```
+  spark.sql.adaptive.enabled = true
+  spark.sql.adaptive.coalescePartitions.enabled = true
+  ```
+- Note: `autoOptimize` and `optimize().executeCompaction()` are Databricks-only features
+  and are NOT available in open-source Delta Lake. AQE is the correct OSS alternative.
 
 ## 8. Validation (`validate_bronze.py`)
 
