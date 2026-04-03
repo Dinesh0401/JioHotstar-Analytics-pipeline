@@ -1,31 +1,35 @@
-"""Shared configuration for all data generation scripts."""
+"""Shared configuration for all data generation and Spark scripts."""
 import os
 
 # Project root (two levels up from config/)
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # ── MySQL ──
-MYSQL_HOST = "localhost"
-MYSQL_PORT = 3306
-MYSQL_USER = "root"
-MYSQL_PASSWORD = "streaming_pass"
-MYSQL_DATABASE = "streaming_users"
+MYSQL_HOST = os.getenv("MYSQL_HOST", "localhost")
+MYSQL_PORT = int(os.getenv("MYSQL_PORT", "3307"))
+MYSQL_USER = os.getenv("MYSQL_USER", "root")
+MYSQL_PASSWORD = os.getenv("MYSQL_PASSWORD", "streaming_pass")
+MYSQL_DATABASE = os.getenv("MYSQL_DATABASE", "streaming_users")
 
 # ── PostgreSQL ──
-POSTGRES_HOST = "localhost"
-POSTGRES_PORT = 5432
-POSTGRES_USER = "postgres"
-POSTGRES_PASSWORD = "streaming_pass"
-POSTGRES_DATABASE = "streaming_content"
+POSTGRES_HOST = os.getenv("POSTGRES_HOST", "localhost")
+POSTGRES_PORT = int(os.getenv("POSTGRES_PORT", "5433"))
+POSTGRES_USER = os.getenv("POSTGRES_USER", "postgres")
+POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD", "streaming_pass")
+POSTGRES_DATABASE = os.getenv("POSTGRES_DATABASE", "streaming_content")
 
 # ── Kafka ──
-KAFKA_BOOTSTRAP = "localhost:9092"
+KAFKA_BOOTSTRAP = os.getenv("KAFKA_BOOTSTRAP", "localhost:9092")
 KAFKA_TOPIC = "media.viewing.live"
 
 # ── Paths (absolute, derived from PROJECT_ROOT) ──
-DATA_SOURCES_DIR = os.path.join(PROJECT_ROOT, "data_sources")
+DATA_SOURCES_DIR = os.path.join(PROJECT_ROOT, os.getenv("DATA_SOURCES_DIR", "data_sources"))
 MASTER_IDS_PATH = os.path.join(PROJECT_ROOT, "data_generation", "master_ids.json")
 LOGS_DIR = os.path.join(PROJECT_ROOT, "logs")
+
+# ── Lakehouse ──
+LAKEHOUSE_PATH = os.getenv("LAKEHOUSE_PATH", os.path.join(PROJECT_ROOT, "lakehouse"))
+CHECKPOINT_PATH = os.path.join(LAKEHOUSE_PATH, "checkpoints") if not LAKEHOUSE_PATH.startswith("s3://") else f"{LAKEHOUSE_PATH}/checkpoints"
 
 # ── Entity Counts ──
 NUM_USERS = 5000

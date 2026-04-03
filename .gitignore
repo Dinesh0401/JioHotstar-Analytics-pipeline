@@ -11,3 +11,16 @@ logs/
 __pycache__/
 *.pyc
 .venv/
+
+# Lakehouse (local Delta tables)
+lakehouse/
+
+# Spark streaming checkpoints
+checkpoints/
+
+# Environment files (may contain paths)
+.env
+
+# AWS key files
+*.pem
+infra/aws/ec2_config.txt
