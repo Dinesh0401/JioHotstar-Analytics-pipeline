@@ -21,22 +21,28 @@ from config.settings import (
     POSTGRES_USER,
 )
 
-SPARK_PACKAGES = ",".join([
-    "io.delta:delta-spark_2.12:3.1.0",
+EXTRA_PACKAGES = [
     "org.apache.hadoop:hadoop-aws:3.3.2",
     "org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.1",
     "com.mysql:mysql-connector-j:8.3.0",
     "org.postgresql:postgresql:42.7.3",
-])
+]
 
 
 def get_spark_session(app_name="JioHotstar-Bronze"):
+    # On Windows, Python is 'python' not 'python3'
+    import shutil
+    if not shutil.which("python3") and shutil.which("python"):
+        os.environ.setdefault("PYSPARK_PYTHON", "python")
+        os.environ.setdefault("PYSPARK_DRIVER_PYTHON", "python")
+
     from delta import configure_spark_with_delta_pip
     from pyspark.sql import SparkSession
 
     builder = SparkSession.builder \
         .appName(app_name) \
-        .config("spark.jars.packages", SPARK_PACKAGES) \
+        .config("spark.driver.extraJavaOptions", "-Duser.timezone=Asia/Kolkata") \
+        .config("spark.executor.extraJavaOptions", "-Duser.timezone=Asia/Kolkata") \
         .config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension") \
         .config("spark.sql.catalog.spark_catalog", "org.apache.spark.sql.delta.catalog.DeltaCatalog") \
         .config("spark.sql.shuffle.partitions", "4") \
@@ -49,7 +55,7 @@ def get_spark_session(app_name="JioHotstar-Bronze"):
             .config("spark.hadoop.fs.s3a.aws.credentials.provider",
                     "com.amazonaws.auth.InstanceProfileCredentialsProvider")
 
-    spark = configure_spark_with_delta_pip(builder).getOrCreate()
+    spark = configure_spark_with_delta_pip(builder, extra_packages=EXTRA_PACKAGES).getOrCreate()
     spark.sparkContext.setLogLevel("WARN")
     return spark
 
