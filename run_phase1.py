@@ -54,11 +54,35 @@ def step(num, total, description):
     log.info("=" * 60)
 
 
+def find_docker():
+    """Locate the docker executable, checking common Windows paths."""
+    import shutil
+
+    path = shutil.which("docker")
+    if path:
+        return path
+    # Common Docker Desktop install locations on Windows
+    for candidate in [
+        r"C:\Program Files\Docker\Docker\resources\bin\docker.exe",
+        r"C:\Program Files\Docker\Docker\resources\docker.exe",
+    ]:
+        if os.path.isfile(candidate):
+            return candidate
+    return None
+
+
+DOCKER_EXE = find_docker()
+
+
 def check_docker():
     """Verify Docker is available and running."""
+    if DOCKER_EXE is None:
+        log.error("Docker not found. Please install Docker Desktop.")
+        sys.exit(1)
+
     try:
         result = subprocess.run(
-            ["docker", "info"],
+            [DOCKER_EXE, "info"],
             capture_output=True,
             text=True,
             timeout=10,
@@ -71,13 +95,13 @@ def check_docker():
         log.error("Docker is not running. Please start Docker Desktop.")
         sys.exit(1)
 
-    log.info("Docker is running.")
+    log.info(f"Docker is running. ({DOCKER_EXE})")
 
 
 def start_infrastructure():
     """Run docker compose up -d."""
     result = subprocess.run(
-        ["docker", "compose", "up", "-d"],
+        [DOCKER_EXE, "compose", "up", "-d"],
         cwd=DOCKER_COMPOSE_DIR,
         capture_output=True,
         text=True,
@@ -132,33 +156,42 @@ def wait_for_postgres(timeout=60):
     sys.exit(1)
 
 
-def create_kafka_topic():
-    """Create Kafka topic via docker exec."""
-    result = subprocess.run(
-        [
-            "docker",
-            "exec",
-            "streaming_kafka",
-            "kafka-topics",
-            "--create",
-            "--topic",
-            KAFKA_TOPIC,
-            "--bootstrap-server",
-            "localhost:9092",
-            "--partitions",
-            "3",
-            "--replication-factor",
-            "1",
-            "--if-not-exists",
-        ],
-        capture_output=True,
-        text=True,
-    )
+def create_kafka_topic(timeout=90):
+    """Create Kafka topic via docker exec, retrying until broker is ready."""
+    start = time.time()
+    while time.time() - start < timeout:
+        result = subprocess.run(
+            [
+                DOCKER_EXE,
+                "exec",
+                "streaming_kafka",
+                "kafka-topics",
+                "--create",
+                "--topic",
+                KAFKA_TOPIC,
+                "--bootstrap-server",
+                "localhost:9092",
+                "--partitions",
+                "3",
+                "--replication-factor",
+                "1",
+                "--if-not-exists",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=15,
+        )
 
-    if result.returncode != 0 and "already exists" not in result.stderr:
-        log.warning(f"Kafka topic creation warning: {result.stderr.strip()}")
-    else:
-        log.info(f"Kafka topic '{KAFKA_TOPIC}' created (or already exists).")
+        if result.returncode == 0 or "already exists" in (result.stderr or ""):
+            log.info(f"Kafka topic '{KAFKA_TOPIC}' created (or already exists).")
+            return
+
+        # Broker not ready yet — retry
+        log.info("Kafka broker not ready yet, retrying in 5s...")
+        time.sleep(5)
+
+    log.error(f"Could not create Kafka topic within {timeout}s")
+    sys.exit(1)
 
 
 def run_generator(module_name, description):

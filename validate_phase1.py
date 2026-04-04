@@ -3,11 +3,28 @@
 import csv
 import json
 import os
+import shutil
 import subprocess
 import sys
 
 import psycopg2
 import pymysql
+
+
+def _find_docker():
+    path = shutil.which("docker")
+    if path:
+        return path
+    for candidate in [
+        r"C:\Program Files\Docker\Docker\resources\bin\docker.exe",
+        r"C:\Program Files\Docker\Docker\resources\docker.exe",
+    ]:
+        if os.path.isfile(candidate):
+            return candidate
+    return "docker"
+
+
+DOCKER_EXE = _find_docker()
 
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -193,7 +210,7 @@ def validate():
     try:
         kafka_topics = subprocess.run(
             [
-                "docker",
+                DOCKER_EXE,
                 "exec",
                 "streaming_kafka",
                 "kafka-topics",
