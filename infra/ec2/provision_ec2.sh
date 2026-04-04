@@ -248,6 +248,11 @@ try:
     from pyspark.sql import SparkSession
     from delta import configure_spark_with_delta_pip
 
+    extra_pkgs = [
+        "org.apache.hadoop:hadoop-aws:3.3.2",
+        "com.amazonaws:aws-java-sdk-bundle:1.11.1026",
+    ]
+
     builder = (
         SparkSession.builder
         .appName("S3ConnectivityTest")
@@ -256,14 +261,10 @@ try:
         .config("spark.sql.catalog.spark_catalog", "org.apache.spark.sql.delta.catalog.DeltaCatalog")
         .config("spark.hadoop.fs.s3a.impl", "org.apache.hadoop.fs.s3a.S3AFileSystem")
         .config("spark.hadoop.fs.s3a.aws.credentials.provider",
-                "com.amazonaws.auth.DefaultAWSCredentialsProviderChain")
-        .config("spark.jars.packages",
-                "io.delta:delta-spark_2.12:3.1.0,"
-                "org.apache.hadoop:hadoop-aws:3.3.4,"
-                "com.amazonaws:aws-java-sdk-bundle:1.12.262")
+                "com.amazonaws.auth.InstanceProfileCredentialsProvider")
     )
 
-    spark = configure_spark_with_delta_pip(builder).getOrCreate()
+    spark = configure_spark_with_delta_pip(builder, extra_packages=extra_pkgs).getOrCreate()
     spark.sparkContext.setLogLevel("WARN")
 
     s3_path = "s3a://jiohotstar-lakehouse-868896905478/bronze/_connectivity_test/"

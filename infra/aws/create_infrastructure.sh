@@ -15,7 +15,7 @@ INSTANCE_PROFILE_NAME="jiohotstar-ec2-profile"
 SG_NAME="jiohotstar-sg"
 KEY_NAME="jiohotstar-key"
 AMI_ID="ami-0f58b397bc5c1f2e8"          # Ubuntu 22.04 LTS in ap-south-1
-INSTANCE_TYPE="t3.medium"
+INSTANCE_TYPE="m7i-flex.large"
 VOLUME_SIZE=30
 VOLUME_TYPE="gp3"
 
@@ -223,7 +223,7 @@ if [[ "${EXISTING_INSTANCE}" != "None" && -n "${EXISTING_INSTANCE}" ]]; then
     INSTANCE_ID="${EXISTING_INSTANCE}"
     echo "  Instance already exists: ${INSTANCE_ID} - skipping launch."
 else
-    INSTANCE_ID=$(aws ec2 run-instances \
+    INSTANCE_ID=$(MSYS_NO_PATHCONV=1 aws ec2 run-instances \
         --image-id "${AMI_ID}" \
         --instance-type "${INSTANCE_TYPE}" \
         --key-name "${KEY_NAME}" \
