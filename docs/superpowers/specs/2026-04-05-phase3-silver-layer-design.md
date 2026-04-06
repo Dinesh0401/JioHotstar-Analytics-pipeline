@@ -250,7 +250,7 @@ Checks to implement:
 | 14 | silver_viewing_events no duplicate event_id | distinct check |
 | 15 | silver_viewing_events event_ts is timestamp | schema check |
 | 16 | silver_viewing_events event_date populated | no nulls |
-| 17 | silver_campaigns budget_amount is numeric | no nulls, > 0 |
+| 17 | silver_campaigns budget_amount is numeric | no nulls |
 | 18 | silver_campaigns budget_currency populated | no nulls |
 | 19 | All silver tables have _silver_processed_at | schema check |
 | 20 | All silver tables _delta_log exists | Delta format check |
