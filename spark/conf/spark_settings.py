@@ -72,6 +72,11 @@ def get_bronze_path(table_name):
     return f"{base}/bronze/{table_name}"
 
 
+def get_silver_path(table_name):
+    base = get_lakehouse_path()
+    return f"{base}/silver/{table_name}"
+
+
 def get_checkpoint_path(name):
     base = get_lakehouse_path()
     return f"{base}/checkpoints/{name}"
