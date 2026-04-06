@@ -53,6 +53,9 @@ def transform_viewing_events(spark):
     combined = combined.withColumn("event_ts", to_timestamp(col("event_ts")))
     combined = combined.withColumn("session_start_ts", to_timestamp(col("session_start_ts")))
 
+    # Drop rows with null event_ts (invalid/test events)
+    combined = combined.filter(col("event_ts").isNotNull())
+
     # Compute derived columns
     combined = combined.withColumn("watch_duration_sec", (col("watch_duration_ms") / 1000).cast("double"))
     combined = combined.withColumn("event_date", to_date(col("event_ts")))
