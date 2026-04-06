@@ -173,6 +173,9 @@ def main():
 
     with col4:
         st.markdown('<div class="section-header">Top 15 Rated Content</div>', unsafe_allow_html=True)
+        import pandas as pd
+        ratings["avg_rating"] = pd.to_numeric(ratings["avg_rating"], errors="coerce")
+        ratings["rating_count"] = pd.to_numeric(ratings["rating_count"], errors="coerce")
         top_rated = ratings[ratings["rating_count"] >= 5].nlargest(15, "avg_rating")
         top_rated = top_rated.copy()
         top_rated["short_title"] = top_rated["title"].str[:30]
