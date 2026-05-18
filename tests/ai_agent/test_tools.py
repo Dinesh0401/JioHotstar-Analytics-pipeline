@@ -81,3 +81,51 @@ def test_registry_execute_catches_tool_exception():
     result = reg.execute("boom", {}, state=None)
     assert result.error != ""
     assert "kaboom" in result.error
+
+
+from ai_agent.tools import SqlValidationError, validate_sql
+
+_APPROVED = {"content_watch_metrics", "genre_popularity"}
+
+
+def test_validate_sql_accepts_plain_select():
+    validate_sql("SELECT title FROM content_watch_metrics LIMIT 5", _APPROVED)
+
+
+def test_validate_sql_accepts_with_cte():
+    validate_sql(
+        "WITH t AS (SELECT * FROM genre_popularity) SELECT genre FROM t",
+        _APPROVED,
+    )
+
+
+@pytest.mark.parametrize(
+    "sql",
+    [
+        "DROP TABLE content_watch_metrics",
+        "INSERT INTO genre_popularity VALUES (1)",
+        "UPDATE genre_popularity SET genre='x'",
+        "DELETE FROM genre_popularity",
+        "ALTER TABLE genre_popularity ADD c int",
+        "CREATE TABLE x (a int)",
+        "UNLOAD (SELECT * FROM genre_popularity) TO 's3://x'",
+    ],
+)
+def test_validate_sql_rejects_non_select(sql):
+    with pytest.raises(SqlValidationError):
+        validate_sql(sql, _APPROVED)
+
+
+def test_validate_sql_rejects_multiple_statements():
+    with pytest.raises(SqlValidationError):
+        validate_sql("SELECT 1 FROM genre_popularity; SELECT 2 FROM genre_popularity", _APPROVED)
+
+
+def test_validate_sql_rejects_information_schema():
+    with pytest.raises(SqlValidationError):
+        validate_sql("SELECT * FROM information_schema.tables", _APPROVED)
+
+
+def test_validate_sql_rejects_unapproved_table():
+    with pytest.raises(SqlValidationError):
+        validate_sql("SELECT * FROM secret_users", _APPROVED)

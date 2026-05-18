@@ -66,3 +66,46 @@ class ToolRegistry:
             return tool.fn(params or {}, state)
         except Exception as exc:  # tool failures become observations, never crashes
             return ToolResult(text="", error=f"{type(exc).__name__}: {exc}")
+
+
+class SqlValidationError(ValueError):
+    """Raised when generated SQL fails the runtime guardrail."""
+
+
+_FORBIDDEN_KEYWORDS = re.compile(
+    r"\b(INSERT|UPDATE|DELETE|DROP|ALTER|CREATE|TRUNCATE|MERGE|GRANT|REVOKE|UNLOAD)\b",
+    re.IGNORECASE,
+)
+_TABLE_REF = re.compile(r"\b(?:FROM|JOIN)\s+([a-zA-Z0-9_\.]+)", re.IGNORECASE)
+
+
+def validate_sql(sql: str, approved_tables: set[str]) -> None:
+    """Validate that ``sql`` is a single read-only query over approved tables.
+
+    Raises SqlValidationError on any violation. Returns None when the SQL is safe.
+    """
+    stripped = sql.strip().rstrip(";").strip()
+    if not stripped:
+        raise SqlValidationError("Empty SQL.")
+    if ";" in stripped:
+        raise SqlValidationError("Multiple statements are not allowed.")
+
+    head = stripped.upper().lstrip()
+    if not (head.startswith("SELECT") or head.startswith("WITH")):
+        raise SqlValidationError("Only SELECT / WITH queries are allowed.")
+
+    if _FORBIDDEN_KEYWORDS.search(stripped):
+        raise SqlValidationError("SQL contains a forbidden write/DDL keyword.")
+
+    if "INFORMATION_SCHEMA" in stripped.upper():
+        raise SqlValidationError("Access to INFORMATION_SCHEMA is not allowed.")
+
+    referenced = {ref.split(".")[-1].lower() for ref in _TABLE_REF.findall(stripped)}
+    # CTE aliases are allowed; only flag refs that are neither approved nor a CTE name.
+    cte_names = {
+        m.lower()
+        for m in re.findall(r"\b([a-zA-Z0-9_]+)\s+AS\s*\(", stripped, re.IGNORECASE)
+    }
+    unknown = referenced - {t.lower() for t in approved_tables} - cte_names
+    if unknown:
+        raise SqlValidationError(f"SQL references non-approved tables: {sorted(unknown)}")
