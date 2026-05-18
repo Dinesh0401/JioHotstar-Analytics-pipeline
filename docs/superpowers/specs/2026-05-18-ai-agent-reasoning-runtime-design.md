@@ -108,7 +108,13 @@ class ToolResult:
     dataframe: pd.DataFrame | None = None
     sql: str = ""             # SQL actually executed, if any
     error: str = ""
+    source: str = ""          # data origin: fixed_sql | generated_sql | streaming | replay
 ```
+
+`source` records how the result was produced. It is cheap to set and makes
+debugging and later evaluation easier — e.g. the share of `generated_sql` results
+across traces is the metric for whether the escape-hatch tool is over-used (see
+Tool selection policy below).
 
 Two tiers of tools — this is the **SQL guardrail**:
 
@@ -125,6 +131,25 @@ Two tiers of tools — this is the **SQL guardrail**:
 
 The reasoning brain decides *what to ask*; it never writes SQL. The catalog plus
 validator is the wall against hallucinated joins, schema drift, and SQL injection.
+
+**Tool selection policy — fixed tools first.** `query_analytics` is a Tier-3
+escape hatch, not a default. The risk is that it quietly swallows workflows: if
+the brain reaches for it routinely, every fixed tool becomes dead code and the
+reasoning trace loses its structure and safety guarantees. The brain is stateless
+per step (no learning, no drift), so the guardrail is just three boring levers:
+
+1. `query_analytics`'s tool *description* explicitly states "use only when no
+   fixed tool fits the question."
+2. The `BedrockBrain` system prompt instructs fixed-tools-first.
+3. The `RuleBrain` enforces this *by construction* — keyword scoring always
+   prefers fixed tools; `query_analytics` is reached only when every fixed-tool
+   score is zero.
+
+No new Tier-2 generic tool (e.g. `compare_metrics`) is added. Comparison-style
+questions are answered by *chaining* fixed tools (`subscriptions` then
+`churn_risk`) — that chain is both sufficient and is exactly the multi-step
+behavior the reasoning-trace showcase exists to display. A generic comparison
+tool would collapse a visible 2-step chain into one opaque call.
 
 **`validate_sql()` rules (paranoid by default):**
 
@@ -201,6 +226,9 @@ Shared protocol: `next_action(state, tools) -> ToolCall | FinalAnswer`.
   "compare" + "plan" -> `subscriptions` then `churn_risk` per plan). Honest scope:
   it chains the patterns we encode, not arbitrary reasoning — but it always runs,
   fully offline. Deterministic logic is not presented as reasoning.
+  **Constraint:** the encoded chain rules must cover every multi-step sample
+  question displayed in the Command Center, so the offline demo chains correctly
+  even with no AWS. The chain rules and the UI sample list are authored together.
 
 The engine picks `BedrockBrain` when Bedrock is reachable; a Bedrock exception
 mid-run flips `state.active_brain` to `rule` and emits a `FALLBACK` event so the
@@ -263,6 +291,13 @@ A three-zone layout on the existing dark IPL theme:
   literally watches bounded, controlled cognition. Card kinds: `THOUGHT`,
   `TOOL_CALL` (tool + args chip), `OBSERVATION` (collapsible SQL + row count +
   preview + `duration_ms`), `FALLBACK` (amber), `SUMMARY`, `FINAL` (green capstone).
+
+**Known implementation risk (step 7).** Streamlit reruns the whole script on each
+interaction and does not natively support mid-execution incremental rendering. The
+live streaming trace must be built with `st.empty()` placeholder containers that
+the engine's `on_event` callback writes into as the synchronous loop runs. This is
+the fiddliest part of the build — budget time for it and validate it via the
+CLI-first checkpoint before attempting the UI.
 
 ### Dashboard entry — new section in `dashboard/app.py`
 
@@ -345,6 +380,11 @@ UI last.
 - Additional brains (`OpenAIBrain`, `LocalLLMBrain`, `HybridBrain`) — the
   brain-agnostic engine already supports this without orchestration changes.
 - Cross-session memory persistence — only if a real need appears.
+- Runtime evaluation metrics computed from serialized traces — `success_rate`,
+  `fallback_rate`, `avg_steps`, tool-usage frequency, and `generated_sql` share
+  (escape-hatch over-use). The `ToolResult.source` field and trace serialization
+  already make these computable; building the metrics layer is deferred until the
+  runtime itself is stable.
 
 ## Success criteria
 
