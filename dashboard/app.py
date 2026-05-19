@@ -10,6 +10,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 from pyspark.sql import SparkSession
 
+from ai_agent import AnalyticsAgent
 from spark.conf.spark_settings import get_gold_path, get_silver_path, get_spark_session
 
 # ── Page config ──────────────────────────────────────────────────────────────
@@ -53,6 +54,12 @@ def load_spark():
     return get_spark_session("Dashboard")
 
 
+@st.cache_resource
+def load_analytics_agent():
+    """Create the analytics agent once and cache it."""
+    return AnalyticsAgent.from_env()
+
+
 @st.cache_data(ttl=300)
 def load_gold_table(_spark, table_name):
     """Load a Gold Delta table as a pandas DataFrame."""
@@ -73,6 +80,67 @@ def render_metric(label, value, prefix="", suffix=""):
         <div class="metric-label">{label}</div>
     </div>
     """, unsafe_allow_html=True)
+
+
+def render_ai_analytics_panel():
+    """Render the Bedrock + Athena analytics assistant panel."""
+    st.markdown('<div class="section-header">AI Analytics Agent</div>', unsafe_allow_html=True)
+    st.caption(
+        "Ask questions over the Gold and ML tables. Bedrock generates SQL when configured; "
+        "Athena executes it."
+    )
+
+    samples = [
+        "Top 5 most watched shows",
+        "Which plan has the most cancellations?",
+        "Which users are most likely to churn?",
+        "Recommend content for user U1001",
+    ]
+
+    if "ai_question" not in st.session_state:
+        st.session_state["ai_question"] = samples[0]
+
+    sample_columns = st.columns(len(samples))
+    for index, sample in enumerate(samples):
+        if sample_columns[index].button(sample, key=f"sample_question_{index}", use_container_width=True):
+            st.session_state["ai_question"] = sample
+
+    question = st.text_input("Ask the agent", key="ai_question")
+    run_col, preview_col = st.columns(2)
+    run_query = run_col.button("Run on Athena", use_container_width=True)
+    preview_query = preview_col.button("Generate SQL Only", use_container_width=True)
+
+    if not (run_query or preview_query):
+        return
+
+    agent = load_analytics_agent()
+    status_text = "Generating SQL and running Athena query..." if run_query else "Generating SQL preview..."
+    with st.spinner(status_text):
+        result = agent.ask(question, execute=run_query)
+
+    generator_label = "Bedrock" if result.generator == "bedrock" else "Rule-based fallback"
+    st.caption(f"Generator: {generator_label}")
+    st.code(result.sql, language="sql")
+    st.info(result.summary)
+
+    if result.execution_id:
+        st.caption(f"Athena execution ID: {result.execution_id}")
+
+    if result.error:
+        st.error(result.error)
+        return
+
+    if result.figure is not None:
+        result.figure.update_layout(
+            plot_bgcolor="#1e293b",
+            paper_bgcolor="#0f172a",
+            font_color="#e2e8f0",
+            margin=dict(l=40, r=20, t=40, b=40),
+        )
+        st.plotly_chart(result.figure, use_container_width=True)
+
+    if result.dataframe is not None:
+        st.dataframe(result.dataframe, use_container_width=True, hide_index=True)
 
 
 def main():
@@ -269,6 +337,8 @@ def main():
     st.plotly_chart(fig_hist, use_container_width=True)
 
     # ── Footer ───────────────────────────────────────────────────────────────
+    render_ai_analytics_panel()
+
     st.markdown("---")
     st.markdown(
         '<div style="text-align:center; color:#64748b; font-size:0.8rem;">'
