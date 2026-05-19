@@ -82,6 +82,42 @@ def render_metric(label, value, prefix="", suffix=""):
     """, unsafe_allow_html=True)
 
 
+def render_ai_agent_section():
+    """Render the AI Agent showcase: capability tiles + a replayed demo trace."""
+    import json
+    from pathlib import Path
+
+    st.markdown('<div class="section-header">🛰️ AI Agent — Autonomous Analytics Runtime</div>',
+                unsafe_allow_html=True)
+    st.markdown("A bounded plan → act → observe agent that chains tools to answer "
+                "multi-step questions over the lakehouse, with a deterministic offline mode.")
+
+    tiles = st.columns(4)
+    for col, (title, body) in zip(tiles, [
+        ("Plan → Act → Observe", "Iterative tool-chaining loop, capped at 5 steps."),
+        ("Hybrid brains", "Bedrock LLM reasoning with a deterministic rule fallback."),
+        ("Observable", "Every step emits a structured, replayable trace event."),
+        ("Guardrailed", "Read-only, table-whitelisted SQL — no hallucinated writes."),
+    ]):
+        col.markdown(f'<div class="metric-card"><div class="metric-value" '
+                     f'style="font-size:1rem">{title}</div>'
+                     f'<div class="metric-label">{body}</div></div>', unsafe_allow_html=True)
+
+    demo_path = Path(__file__).parent.parent / "ai_agent" / "demo_traces" / "compare_churn_by_plan.json"
+    st.markdown("**Sample run:** *Compare churn risk across subscription plans*")
+    if demo_path.exists():
+        events = json.loads(demo_path.read_text(encoding="utf-8"))
+        for event in events:
+            args = f" {event['tool_args']}" if event.get("tool_args") else ""
+            line = event.get("tool_name", "") + args if event["kind"] == "tool_call" else event["title"]
+            latency = f" · {event['duration_ms']} ms" if event.get("duration_ms") else ""
+            st.markdown(f"- **Step {event['step_index']} · {event['kind']}** — {line}{latency}")
+    else:
+        st.info("Run `python -m ai_agent.build_demo_traces` to generate the demo trace.")
+
+    st.caption("Launch the full experience: `streamlit run ai_agent/streamlit_app.py`")
+
+
 def render_ai_analytics_panel():
     """Render the Bedrock + Athena analytics assistant panel."""
     st.markdown('<div class="section-header">AI Analytics Agent</div>', unsafe_allow_html=True)
@@ -347,6 +383,8 @@ def main():
         '</div>',
         unsafe_allow_html=True,
     )
+
+    render_ai_agent_section()
 
 
 if __name__ == "__main__":
