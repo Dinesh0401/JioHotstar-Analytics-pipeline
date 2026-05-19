@@ -56,3 +56,47 @@ def test_top_content_tool_runs(monkeypatch):
     result = registry.execute("top_content", {"limit": 5}, state=None)
     assert "World Cup" in result.text
     assert result.dataframe is not None
+
+
+def test_churn_risk_by_plan(monkeypatch):
+    monkeypatch.setattr(
+        datasources, "run_athena_sql",
+        lambda sql: [{"plan_id": "PREMIUM", "total_users": "100",
+                      "predicted_churners": "30", "avg_churn_prob": "0.42"}],
+    )
+    registry = analytics_tools.build_default_registry()
+    result = registry.execute("churn_risk", {"by": "plan"}, state=None)
+    assert "PREMIUM" in result.text
+    assert "plan" in result.sql.lower()
+
+
+def test_churn_risk_for_specific_user(monkeypatch):
+    monkeypatch.setattr(
+        datasources, "run_athena_sql",
+        lambda sql: [{"user_id": "USR-1000001", "plan_id": "PREMIUM",
+                      "churn_probability": "0.81", "prediction": "1"}],
+    )
+    registry = analytics_tools.build_default_registry()
+    result = registry.execute("churn_risk", {"user_id": "USR-1000001"}, state=None)
+    assert "USR-1000001" in result.sql
+
+
+def test_query_analytics_validates_generated_sql(monkeypatch):
+    # Generator returns SQL that touches a non-approved table -> tool returns an error.
+    class FakePlan:
+        sql = "SELECT * FROM secret_users"
+        title = "Bad"
+        chart_type = "table"
+
+    monkeypatch.setattr(
+        analytics_tools, "_generate_sql", lambda question: FakePlan())
+    registry = analytics_tools.build_default_registry()
+    result = registry.execute("query_analytics", {"question": "show secrets"}, state=None)
+    assert result.error != ""
+
+
+def test_default_registry_has_all_tools():
+    names = analytics_tools.build_default_registry().names()
+    for expected in ["top_content", "churn_risk", "streaming_traffic",
+                     "pipeline_health", "query_analytics"]:
+        assert expected in names

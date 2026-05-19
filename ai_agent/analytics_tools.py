@@ -147,15 +147,173 @@ RECOMMENDATIONS = make_sql_tool(
 )
 
 
-_FIXED_TOOLS = [
-    TOP_CONTENT, GENRE_POPULARITY, CONTENT_RATINGS, SUBSCRIPTIONS,
-    DAU, POPULARITY_PREDICTIONS, RECOMMENDATIONS,
+# ── Branching tools ──────────────────────────────────────────────────────────
+
+def _churn_risk_fn(params: dict, state) -> ToolResult:
+    user_id = params.get("user_id")
+    by_plan = str(params.get("by", "")).lower() == "plan"
+    if user_id:
+        safe = str(user_id).replace("'", "")
+        sql = ("SELECT user_id, plan_id, subscription_duration_days, "
+               "churn_probability, prediction "
+               f"FROM user_churn_prediction WHERE user_id = '{safe}' LIMIT 1")
+        title = f"Churn Analysis — {safe}"
+    elif by_plan:
+        sql = ("SELECT plan_id, COUNT(*) AS total_users, "
+               "SUM(CASE WHEN prediction = 1 THEN 1 ELSE 0 END) AS predicted_churners, "
+               "ROUND(AVG(churn_probability), 4) AS avg_churn_prob "
+               "FROM user_churn_prediction GROUP BY plan_id ORDER BY avg_churn_prob DESC")
+        title = "Churn Risk by Plan"
+    else:
+        sql = ("SELECT user_id, plan_id, churn_probability, prediction "
+               "FROM user_churn_prediction ORDER BY churn_probability DESC LIMIT 15")
+        title = "Top Churn-Risk Users"
+    try:
+        rows = datasources.run_athena_sql(sql)
+    except datasources.DataSourceError as exc:
+        return ToolResult(text="", sql=sql, error=str(exc), source="fixed_sql")
+    df = _rows_to_df(rows)
+    if df.empty:
+        return ToolResult(text=f"**{title}**: no matching rows.", sql=sql,
+                          dataframe=df, source="fixed_sql")
+    return ToolResult(text=f"**{title}** ({len(df)} rows)\n\n{df.head(15).to_markdown(index=False)}",
+                      dataframe=df, sql=sql, source="fixed_sql")
+
+
+CHURN_RISK = Tool(
+    name="churn_risk",
+    description="Churn risk analysis. Pass user_id for one user, by='plan' to group "
+                "by subscription plan, or no args for the highest-risk users.",
+    parameters={"type": _OBJECT, "properties": {
+        "user_id": {"type": "string", "description": "Optional specific user id."},
+        "by": {"type": "string", "enum": ["plan"],
+               "description": "Set to 'plan' to group churn by plan."}}},
+    fn=_churn_risk_fn,
+)
+
+
+def _streaming_traffic_fn(params: dict, state) -> ToolResult:
+    dimension = str(params.get("dimension", "")).lower()
+    if dimension == "genre":
+        sql = ("SELECT genre, COUNT(*) AS events, COUNT(DISTINCT user_id) AS users "
+               "FROM streaming_events WHERE event_ts > NOW() - INTERVAL '30 minutes' "
+               "GROUP BY genre ORDER BY events DESC LIMIT 10")
+        title = "Live Streaming by Genre (30 min)"
+    elif dimension == "city":
+        sql = ("SELECT city, COUNT(*) AS events, COUNT(DISTINCT user_id) AS users "
+               "FROM streaming_events WHERE event_ts > NOW() - INTERVAL '30 minutes' "
+               "GROUP BY city ORDER BY events DESC LIMIT 10")
+        title = "Live Streaming by City (30 min)"
+    else:
+        sql = ("SELECT COUNT(*) AS total_events, COUNT(DISTINCT user_id) AS unique_users, "
+               "COUNT(*) FILTER (WHERE event_ts > NOW() - INTERVAL '1 minute') AS events_last_min "
+               "FROM streaming_events WHERE event_ts > NOW() - INTERVAL '30 minutes'")
+        title = "Real-Time Streaming Status"
+    try:
+        rows = datasources.run_pg_sql(sql)
+    except datasources.DataSourceError as exc:
+        return ToolResult(text="", sql=sql, error=str(exc), source="streaming")
+    df = _rows_to_df(rows)
+    if df.empty:
+        return ToolResult(text=f"**{title}**: no recent streaming events.", sql=sql,
+                          dataframe=df, source="streaming")
+    return ToolResult(text=f"**{title}**\n\n{df.head(15).to_markdown(index=False)}",
+                      dataframe=df, sql=sql, source="streaming")
+
+
+STREAMING_TRAFFIC = Tool(
+    name="streaming_traffic",
+    description="Real-time streaming traffic from the live PostgreSQL feed. "
+                "Optional dimension='genre' or 'city'.",
+    parameters={"type": _OBJECT, "properties": {
+        "dimension": {"type": "string", "enum": ["genre", "city"],
+                      "description": "Optional breakdown dimension."}}},
+    fn=_streaming_traffic_fn,
+)
+
+
+def _pipeline_health_fn(params: dict, state) -> ToolResult:
+    tables = ["daily_active_users", "content_watch_metrics", "genre_popularity",
+              "subscription_metrics", "content_ratings_summary", "user_churn_prediction"]
+    rows = []
+    for table in tables:
+        try:
+            count = datasources.run_athena_sql(f"SELECT COUNT(*) AS cnt FROM {table}")
+            rows.append({"table": table, "rows": count[0].get("cnt", "0"), "status": "OK"})
+        except datasources.DataSourceError:
+            rows.append({"table": table, "rows": "0", "status": "ERROR"})
+    df = _rows_to_df(rows)
+    ok = int((df["status"] == "OK").sum())
+    overall = "HEALTHY" if ok == len(tables) else "DEGRADED"
+    return ToolResult(
+        text=f"**Pipeline Health: {overall}** ({ok}/{len(tables)} tables OK)\n\n"
+             f"{df.to_markdown(index=False)}",
+        dataframe=df, source="fixed_sql")
+
+
+PIPELINE_HEALTH = Tool(
+    name="pipeline_health",
+    description="Data pipeline health check — row counts and status for the Gold/ML tables.",
+    parameters={"type": _OBJECT, "properties": {}},
+    fn=_pipeline_health_fn,
+)
+
+
+# ── Tier-3 escape hatch: generated SQL, guardrailed ──────────────────────────
+
+def _generate_sql(question: str):
+    """Generate a SqlPlan for an open-ended question via the existing generators."""
+    from ai_agent.sql_generator import RuleBasedSQLGenerator
+
+    return RuleBasedSQLGenerator(database="jiohotstar_gold").generate(question)
+
+
+def _query_analytics_fn(params: dict, state) -> ToolResult:
+    from ai_agent.catalog import APPROVED_TABLES
+    from ai_agent.sql_generator import SqlGenerationError
+    from ai_agent.tools import SqlValidationError, validate_sql
+
+    question = str(params.get("question", "")).strip()
+    if not question:
+        return ToolResult(text="", error="query_analytics requires a 'question'.")
+    try:
+        plan = _generate_sql(question)
+    except SqlGenerationError as exc:
+        return ToolResult(text="", error=f"Could not generate SQL: {exc}")
+    try:
+        validate_sql(plan.sql, set(APPROVED_TABLES.keys()))
+    except SqlValidationError as exc:
+        return ToolResult(text="", sql=plan.sql, error=f"Generated SQL rejected: {exc}")
+    try:
+        rows = datasources.run_athena_sql(plan.sql)
+    except datasources.DataSourceError as exc:
+        return ToolResult(text="", sql=plan.sql, error=str(exc), source="generated_sql")
+    df = _rows_to_df(rows)
+    body = "no matching rows." if df.empty else df.head(15).to_markdown(index=False)
+    return ToolResult(text=f"**{plan.title}**\n\n{body}", dataframe=df,
+                      sql=plan.sql, source="generated_sql")
+
+
+QUERY_ANALYTICS = Tool(
+    name="query_analytics",
+    description="ESCAPE HATCH — use ONLY when no other tool fits the question. "
+                "Answers open-ended analytics questions by generating guardrailed SQL.",
+    parameters={"type": _OBJECT, "properties": {
+        "question": {"type": "string",
+                      "description": "The natural-language analytics question."}}},
+    fn=_query_analytics_fn,
+)
+
+_ALL_TOOLS = [
+    TOP_CONTENT, GENRE_POPULARITY, CONTENT_RATINGS, SUBSCRIPTIONS, DAU,
+    POPULARITY_PREDICTIONS, RECOMMENDATIONS, CHURN_RISK, STREAMING_TRAFFIC,
+    PIPELINE_HEALTH, QUERY_ANALYTICS,
 ]
 
 
 def build_default_registry() -> ToolRegistry:
-    """Assemble the runtime's tool registry. Extended with branching tools in Task 9."""
+    """Assemble the full runtime tool registry."""
     registry = ToolRegistry()
-    for tool in _FIXED_TOOLS:
+    for tool in _ALL_TOOLS:
         registry.register(tool)
     return registry
