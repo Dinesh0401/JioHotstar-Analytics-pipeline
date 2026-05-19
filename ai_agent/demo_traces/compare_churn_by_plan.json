@@ -1,0 +1,92 @@
+[
+  {
+    "kind": "thought",
+    "title": "Chain step 1/2: subscriptions.",
+    "detail": "",
+    "tool_name": "",
+    "tool_args": {},
+    "sql": "",
+    "duration_ms": 0,
+    "status": "ok",
+    "step_index": 1
+  },
+  {
+    "kind": "tool_call",
+    "title": "subscriptions",
+    "detail": "",
+    "tool_name": "subscriptions",
+    "tool_args": {},
+    "sql": "",
+    "duration_ms": 0,
+    "status": "ok",
+    "step_index": 1
+  },
+  {
+    "kind": "observation",
+    "title": "subscriptions result",
+    "detail": "**Subscription Metrics by Plan** (2 rows)\n\n| plan_id   |   total_subscriptions |   active_subscriptions |   cancelled_subscriptions | top_cancel_reason   |\n|:----------|----------------------:|-----------------------:|--------------------------:|:--------------------|\n| PREMIUM   |                  5000 |                   3800 |                      1200 | price               |\n| VIP       |                  3000 |                   2600 |                       400 | content             |",
+    "tool_name": "",
+    "tool_args": {},
+    "sql": "SELECT plan_id, total_subscriptions, active_subscriptions, cancelled_subscriptions, top_cancel_reason FROM subscription_metrics ORDER BY total_subscriptions DESC",
+    "duration_ms": 16,
+    "status": "ok",
+    "step_index": 1
+  },
+  {
+    "kind": "thought",
+    "title": "Chain step 2/2: churn_risk.",
+    "detail": "",
+    "tool_name": "",
+    "tool_args": {},
+    "sql": "",
+    "duration_ms": 0,
+    "status": "ok",
+    "step_index": 2
+  },
+  {
+    "kind": "tool_call",
+    "title": "churn_risk",
+    "detail": "",
+    "tool_name": "churn_risk",
+    "tool_args": {
+      "by": "plan"
+    },
+    "sql": "",
+    "duration_ms": 0,
+    "status": "ok",
+    "step_index": 2
+  },
+  {
+    "kind": "observation",
+    "title": "churn_risk result",
+    "detail": "**Churn Risk by Plan** (2 rows)\n\n| plan_id   |   total_users |   predicted_churners |   avg_churn_prob |\n|:----------|--------------:|---------------------:|-----------------:|\n| PREMIUM   |          5000 |                 1500 |             0.48 |\n| VIP       |          3000 |                  300 |             0.19 |",
+    "tool_name": "",
+    "tool_args": {},
+    "sql": "SELECT plan_id, COUNT(*) AS total_users, SUM(CASE WHEN prediction = 1 THEN 1 ELSE 0 END) AS predicted_churners, ROUND(AVG(churn_probability), 4) AS avg_churn_prob FROM user_churn_prediction GROUP BY plan_id ORDER BY avg_churn_prob DESC",
+    "duration_ms": 0,
+    "status": "ok",
+    "step_index": 2
+  },
+  {
+    "kind": "thought",
+    "title": "Chain complete \u2014 summarising.",
+    "detail": "",
+    "tool_name": "",
+    "tool_args": {},
+    "sql": "",
+    "duration_ms": 0,
+    "status": "ok",
+    "step_index": 3
+  },
+  {
+    "kind": "final",
+    "title": "Answer ready",
+    "detail": "**Subscription Metrics by Plan** (2 rows)\n\n| plan_id   |   total_subscriptions |   active_subscriptions |   cancelled_subscriptions | top_cancel_reason   |\n|:----------|----------------------:|-----------------------:|--------------------------:|:--------------------|\n| PREMIUM   |                  5000 |                   3800 |                      1200 | price               |\n| VIP       |                  3000 |                   2600 |                       400 | content             |\n\n**Churn Risk by Plan** (2 rows)\n\n| plan_id   |   total_users |   predicted_churners |   avg_churn_prob |\n|:----------|--------------:|---------------------:|-----------------:|\n| PREMIUM   |          5000 |                 1500 |             0.48 |\n| VIP       |          3000 |                  300 |             0.19 |",
+    "tool_name": "",
+    "tool_args": {},
+    "sql": "",
+    "duration_ms": 0,
+    "status": "ok",
+    "step_index": 3
+  }
+]
