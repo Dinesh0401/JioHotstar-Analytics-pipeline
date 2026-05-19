@@ -8,6 +8,7 @@ the LLM. The ReasoningEngine is brain-agnostic.
 from __future__ import annotations
 
 import re
+import time
 from typing import Protocol
 
 from ai_agent.reasoning import AgentState, FinalAnswer, ToolCall
@@ -107,3 +108,93 @@ class RuleBrain:
         if not parts and errors:
             return "I could not retrieve the data: " + "; ".join(errors)
         return "\n\n".join(parts) if parts else "No data was returned."
+
+
+_SYSTEM_PROMPT = (
+    "You are JioHotstar's analytics agent. Answer the user's question by calling "
+    "tools. Prefer the specific fixed tools; use 'query_analytics' ONLY when no "
+    "fixed tool fits. Keep any reasoning text terse — one short sentence. When you "
+    "have enough information, stop calling tools and give the final answer."
+)
+
+
+def build_tool_config(tools: list[Tool]) -> dict:
+    """Build a Bedrock Converse toolConfig from the registry's tool specs."""
+    return {
+        "tools": [
+            {
+                "toolSpec": {
+                    "name": tool.name,
+                    "description": tool.description,
+                    "inputSchema": {"json": tool.parameters or {"type": "object",
+                                                                 "properties": {}}},
+                }
+            }
+            for tool in tools
+        ]
+    }
+
+
+def _observations_block(state: AgentState) -> str:
+    if not state.observations:
+        return ""
+    lines = []
+    for i, obs in enumerate(state.observations, 1):
+        body = getattr(obs, "error", "") or getattr(obs, "text", "")
+        lines.append(f"[observation {i}] {body}")
+    return "\n".join(lines)
+
+
+class BedrockBrain:
+    """LLM-backed brain using Bedrock's Converse tool-use API."""
+
+    name = "bedrock"
+
+    def __init__(self, client, model_id: str) -> None:
+        self._client = client
+        self._model_id = model_id
+
+    def _converse(self, user_text: str, tools: list[Tool], with_tools: bool = True) -> dict:
+        kwargs = {
+            "modelId": self._model_id,
+            "system": [{"text": _SYSTEM_PROMPT}],
+            "messages": [{"role": "user", "content": [{"text": user_text}]}],
+            "inferenceConfig": {"temperature": 0.2, "maxTokens": 700},
+        }
+        if with_tools:
+            kwargs["toolConfig"] = build_tool_config(tools)
+        try:
+            return self._client.converse(**kwargs)
+        except Exception:  # noqa: BLE001 — one retry, then the engine falls back
+            time.sleep(0.5)
+            return self._client.converse(**kwargs)
+
+    def next_action(self, state: AgentState, tools: list[Tool]) -> ToolCall | FinalAnswer:
+        prompt = f"User question: {state.user_query}"
+        observations = _observations_block(state)
+        if observations:
+            prompt += f"\n\nObservations so far:\n{observations}"
+
+        response = self._converse(prompt, tools)
+        content = response.get("output", {}).get("message", {}).get("content", [])
+
+        thought = "".join(b.get("text", "") for b in content if "text" in b).strip()
+        tool_use = next((b["toolUse"] for b in content if "toolUse" in b), None)
+
+        if tool_use is not None:
+            return ToolCall(tool_name=tool_use["name"],
+                            args=tool_use.get("input", {}) or {},
+                            thought=thought or f"Calling {tool_use['name']}.")
+        return FinalAnswer(text=thought or "I could not find an answer.", thought=thought)
+
+    def summarize(self, state: AgentState) -> str:
+        prompt = (f"Question: {state.user_query}\n\nObservations:\n"
+                  f"{_observations_block(state)}\n\nGive a concise final answer.")
+        try:
+            response = self._converse(prompt, tools=[], with_tools=False)
+            content = response.get("output", {}).get("message", {}).get("content", [])
+            text = "".join(b.get("text", "") for b in content if "text" in b).strip()
+            return text or "No answer could be produced."
+        except Exception:  # noqa: BLE001 — summary must not crash the run
+            parts = [getattr(o, "text", "") for o in state.observations if getattr(o, "text", "")]
+            return "\n\n".join(parts) if parts else "No answer could be produced."
