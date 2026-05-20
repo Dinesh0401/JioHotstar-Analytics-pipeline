@@ -33,3 +33,6 @@ replay_pid*.log
 *.log
 .DS_Store
 Thumbs.db
+
+# Streamlit secrets — never commit real values
+.streamlit/secrets.toml
