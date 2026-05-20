@@ -95,7 +95,7 @@ def _pg_query_once(sql: str) -> list[dict]:
             _pg_engine = create_engine(
                 os.getenv(
                     "STREAMING_PG_URL",
-                    "postgresql+psycopg2://grafana:grafana123@localhost:5432/jiohotstar_streaming",
+                    "postgresql+psycopg2://localhost:5432/jiohotstar_streaming",
                 )
             )
         from sqlalchemy import text
