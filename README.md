@@ -1,4 +1,4 @@
-# JioHotstar Media-Streaming Analytics
+ # JioHotstar Media-Streaming Analytics
 
 A media-streaming analytics platform that takes raw viewing events all the way
 to a bounded, observable AI reasoning runtime that can answer multi-step
