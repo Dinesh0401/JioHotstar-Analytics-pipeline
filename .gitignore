@@ -24,3 +24,15 @@ checkpoints/
 # AWS key files
 *.pem
 infra/aws/ec2_config.txt
+
+# JVM crash dumps (Spark/Java)
+hs_err_pid*.log
+replay_pid*.log
+
+# Generic logs and OS noise
+*.log
+.DS_Store
+Thumbs.db
+
+# Streamlit secrets — never commit real values
+.streamlit/secrets.toml

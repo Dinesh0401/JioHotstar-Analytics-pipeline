@@ -10,6 +10,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 from pyspark.sql import SparkSession
 
+from ai_agent import AnalyticsAgent
 from spark.conf.spark_settings import get_gold_path, get_silver_path, get_spark_session
 
 # ── Page config ──────────────────────────────────────────────────────────────
@@ -53,6 +54,12 @@ def load_spark():
     return get_spark_session("Dashboard")
 
 
+@st.cache_resource
+def load_analytics_agent():
+    """Create the analytics agent once and cache it."""
+    return AnalyticsAgent.from_env()
+
+
 @st.cache_data(ttl=300)
 def load_gold_table(_spark, table_name):
     """Load a Gold Delta table as a pandas DataFrame."""
@@ -73,6 +80,103 @@ def render_metric(label, value, prefix="", suffix=""):
         <div class="metric-label">{label}</div>
     </div>
     """, unsafe_allow_html=True)
+
+
+def render_ai_agent_section():
+    """Render the AI Agent showcase: capability tiles + a replayed demo trace."""
+    import json
+    from pathlib import Path
+
+    st.markdown('<div class="section-header">🛰️ AI Agent — Autonomous Analytics Runtime</div>',
+                unsafe_allow_html=True)
+    st.markdown("A bounded plan → act → observe agent that chains tools to answer "
+                "multi-step questions over the lakehouse, with a deterministic offline mode.")
+
+    tiles = st.columns(4)
+    for col, (title, body) in zip(tiles, [
+        ("Plan → Act → Observe", "Iterative tool-chaining loop, capped at 5 steps."),
+        ("Hybrid brains", "Bedrock LLM reasoning with a deterministic rule fallback."),
+        ("Observable", "Every step emits a structured, replayable trace event."),
+        ("Guardrailed", "Read-only, table-whitelisted SQL — no hallucinated writes."),
+    ]):
+        col.markdown(f'<div class="metric-card"><div class="metric-value" '
+                     f'style="font-size:1rem">{title}</div>'
+                     f'<div class="metric-label">{body}</div></div>', unsafe_allow_html=True)
+
+    demo_path = Path(__file__).parent.parent / "ai_agent" / "demo_traces" / "compare_churn_by_plan.json"
+    st.markdown("**Sample run:** *Compare churn risk across subscription plans*")
+    if demo_path.exists():
+        events = json.loads(demo_path.read_text(encoding="utf-8"))
+        for event in events:
+            args = f" {event['tool_args']}" if event.get("tool_args") else ""
+            line = event.get("tool_name", "") + args if event["kind"] == "tool_call" else event["title"]
+            latency = f" · {event['duration_ms']} ms" if event.get("duration_ms") else ""
+            st.markdown(f"- **Step {event['step_index']} · {event['kind']}** — {line}{latency}")
+    else:
+        st.info("Run `python -m ai_agent.build_demo_traces` to generate the demo trace.")
+
+    st.caption("Launch the full experience: `streamlit run ai_agent/streamlit_app.py`")
+
+
+def render_ai_analytics_panel():
+    """Render the Bedrock + Athena analytics assistant panel."""
+    st.markdown('<div class="section-header">AI Analytics Agent</div>', unsafe_allow_html=True)
+    st.caption(
+        "Ask questions over the Gold and ML tables. Bedrock generates SQL when configured; "
+        "Athena executes it."
+    )
+
+    samples = [
+        "Top 5 most watched shows",
+        "Which plan has the most cancellations?",
+        "Which users are most likely to churn?",
+        "Recommend content for user U1001",
+    ]
+
+    if "ai_question" not in st.session_state:
+        st.session_state["ai_question"] = samples[0]
+
+    sample_columns = st.columns(len(samples))
+    for index, sample in enumerate(samples):
+        if sample_columns[index].button(sample, key=f"sample_question_{index}", use_container_width=True):
+            st.session_state["ai_question"] = sample
+
+    question = st.text_input("Ask the agent", key="ai_question")
+    run_col, preview_col = st.columns(2)
+    run_query = run_col.button("Run on Athena", use_container_width=True)
+    preview_query = preview_col.button("Generate SQL Only", use_container_width=True)
+
+    if not (run_query or preview_query):
+        return
+
+    agent = load_analytics_agent()
+    status_text = "Generating SQL and running Athena query..." if run_query else "Generating SQL preview..."
+    with st.spinner(status_text):
+        result = agent.ask(question, execute=run_query)
+
+    generator_label = "Bedrock" if result.generator == "bedrock" else "Rule-based fallback"
+    st.caption(f"Generator: {generator_label}")
+    st.code(result.sql, language="sql")
+    st.info(result.summary)
+
+    if result.execution_id:
+        st.caption(f"Athena execution ID: {result.execution_id}")
+
+    if result.error:
+        st.error(result.error)
+        return
+
+    if result.figure is not None:
+        result.figure.update_layout(
+            plot_bgcolor="#1e293b",
+            paper_bgcolor="#0f172a",
+            font_color="#e2e8f0",
+            margin=dict(l=40, r=20, t=40, b=40),
+        )
+        st.plotly_chart(result.figure, use_container_width=True)
+
+    if result.dataframe is not None:
+        st.dataframe(result.dataframe, use_container_width=True, hide_index=True)
 
 
 def main():
@@ -269,6 +373,8 @@ def main():
     st.plotly_chart(fig_hist, use_container_width=True)
 
     # ── Footer ───────────────────────────────────────────────────────────────
+    render_ai_analytics_panel()
+
     st.markdown("---")
     st.markdown(
         '<div style="text-align:center; color:#64748b; font-size:0.8rem;">'
@@ -277,6 +383,8 @@ def main():
         '</div>',
         unsafe_allow_html=True,
     )
+
+    render_ai_agent_section()
 
 
 if __name__ == "__main__":
