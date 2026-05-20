@@ -13,8 +13,22 @@ from ai_agent.brains import BedrockBrain, RuleBrain
 from ai_agent.reasoning import EngineResult, ReasoningEngine
 
 
+_OFFLINE_MODES = {"offline", "demo", "local"}
+
+
+def is_offline_mode() -> bool:
+    """True when RUN_MODE forces deterministic offline operation."""
+    return os.getenv("RUN_MODE", "").strip().lower() in _OFFLINE_MODES
+
+
 def _maybe_bedrock_brain() -> BedrockBrain | None:
-    """Build a BedrockBrain if boto3 and a model id are available, else None."""
+    """Build a BedrockBrain if boto3 and a model id are available, else None.
+
+    Returns None unconditionally when RUN_MODE is set to offline/demo/local —
+    the public demo must never accidentally hit a real LLM.
+    """
+    if is_offline_mode():
+        return None
     model_id = os.getenv("BEDROCK_MODEL_ID")
     if not model_id:
         return None
@@ -29,7 +43,16 @@ def _maybe_bedrock_brain() -> BedrockBrain | None:
 
 
 def build_engine() -> ReasoningEngine:
-    """Construct the runtime: full tool registry + both brains where available."""
+    """Construct the runtime: full tool registry + both brains where available.
+
+    In offline mode (RUN_MODE=offline) this also monkeypatches the datasource
+    layer with canned rows, so every consumer (CLI, FastAPI, Streamlit) gets
+    consistent AWS-free behavior. The patch is idempotent.
+    """
+    if is_offline_mode():
+        from ai_agent.demo_data import apply_canned_datasource
+
+        apply_canned_datasource()
     return ReasoningEngine(
         registry=build_default_registry(),
         bedrock_brain=_maybe_bedrock_brain(),

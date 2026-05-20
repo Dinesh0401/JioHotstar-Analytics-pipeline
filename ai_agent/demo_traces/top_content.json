@@ -28,7 +28,7 @@
     "tool_name": "",
     "tool_args": {},
     "sql": "SELECT title, content_type, total_views, unique_viewers FROM content_watch_metrics ORDER BY total_views DESC LIMIT 10",
-    "duration_ms": 0,
+    "duration_ms": 1,
     "status": "ok",
     "step_index": 1
   },

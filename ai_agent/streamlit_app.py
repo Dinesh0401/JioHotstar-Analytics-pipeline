@@ -13,8 +13,11 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 import streamlit as st
 
-from ai_agent.langgraph_agent import build_engine
+from ai_agent.langgraph_agent import build_engine, is_offline_mode
 from ai_agent.trace import StepKind
+
+# Offline mode (RUN_MODE=offline) handling lives inside build_engine() so every
+# consumer behaves the same way — see ai_agent/langgraph_agent.py.
 
 st.set_page_config(page_title="JioHotstar AI Command Center", page_icon="🛰️",
                    layout="wide", initial_sidebar_state="collapsed")
@@ -52,8 +55,17 @@ def get_engine():
 
 engine = get_engine()
 _BRAIN_IS_BEDROCK = engine.bedrock_brain is not None
-_MODE = ("🟢 Bedrock reasoning", "badge-bedrock") if _BRAIN_IS_BEDROCK \
-    else ("🟡 Local rule planner", "badge-rule")
+_OFFLINE = is_offline_mode()
+if _BRAIN_IS_BEDROCK:
+    _MODE = ("🟢 Bedrock reasoning", "badge-bedrock")
+    _MODE_SUBTITLE = "Live LLM tool-use over Bedrock."
+elif _OFFLINE:
+    _MODE = ("🟡 Offline deterministic mode", "badge-rule")
+    _MODE_SUBTITLE = ("Rule-based planner over canned data — no LLM, no AWS. "
+                      "Every step in the trace is a real engine call.")
+else:
+    _MODE = ("🟡 Local rule planner", "badge-rule")
+    _MODE_SUBTITLE = "Deterministic offline planner; tools query live data sources."
 _TOOL_COUNT = len(engine.registry.all())
 
 st.markdown(f"""
@@ -62,6 +74,7 @@ st.markdown(f"""
   <p>A bounded plan → act → observe agent over the JioHotstar lakehouse.
      <span class="badge {_MODE[1]}">{_MODE[0]}</span>
      &nbsp;<span class="step-meta">{_TOOL_COUNT} tools registered</span></p>
+  <p class="step-meta" style="margin-top:6px">{_MODE_SUBTITLE}</p>
 </div>
 """, unsafe_allow_html=True)
 

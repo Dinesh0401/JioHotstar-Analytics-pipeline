@@ -28,7 +28,7 @@
     "tool_name": "",
     "tool_args": {},
     "sql": "SELECT plan_id, total_subscriptions, active_subscriptions, cancelled_subscriptions, top_cancel_reason FROM subscription_metrics ORDER BY total_subscriptions DESC",
-    "duration_ms": 18,
+    "duration_ms": 20,
     "status": "ok",
     "step_index": 1
   },
@@ -59,11 +59,11 @@
   {
     "kind": "observation",
     "title": "churn_risk result",
-    "detail": "**Churn Risk by Plan** (3 rows)\n\n| user_id     | plan_id   |   churn_probability |   prediction |\n|:------------|:----------|--------------------:|-------------:|\n| USR-1000001 | PREMIUM   |                0.88 |            1 |\n| USR-1000204 | BASIC     |                0.82 |            1 |\n| USR-1000917 | PREMIUM   |                0.79 |            1 |",
+    "detail": "**Churn Risk by Plan** (3 rows)\n\n| plan_id   |   total_users |   predicted_churners |   avg_churn_prob |\n|:----------|--------------:|---------------------:|-----------------:|\n| PREMIUM   |          5000 |                 1500 |             0.48 |\n| VIP       |          3000 |                  300 |             0.19 |\n| BASIC     |          8000 |                 3200 |             0.41 |",
     "tool_name": "",
     "tool_args": {},
     "sql": "SELECT plan_id, COUNT(*) AS total_users, SUM(CASE WHEN prediction = 1 THEN 1 ELSE 0 END) AS predicted_churners, ROUND(AVG(churn_probability), 4) AS avg_churn_prob FROM user_churn_prediction GROUP BY plan_id ORDER BY avg_churn_prob DESC",
-    "duration_ms": 0,
+    "duration_ms": 1,
     "status": "ok",
     "step_index": 2
   },
@@ -81,7 +81,7 @@
   {
     "kind": "final",
     "title": "Answer ready",
-    "detail": "**Subscription Metrics by Plan** (3 rows)\n\n| plan_id   |   total_subscriptions |   active_subscriptions |   cancelled_subscriptions | top_cancel_reason   |\n|:----------|----------------------:|-----------------------:|--------------------------:|:--------------------|\n| PREMIUM   |                  5000 |                   3800 |                      1200 | price               |\n| VIP       |                  3000 |                   2600 |                       400 | content             |\n| BASIC     |                  8000 |                   5500 |                      2500 | price               |\n\n**Churn Risk by Plan** (3 rows)\n\n| user_id     | plan_id   |   churn_probability |   prediction |\n|:------------|:----------|--------------------:|-------------:|\n| USR-1000001 | PREMIUM   |                0.88 |            1 |\n| USR-1000204 | BASIC     |                0.82 |            1 |\n| USR-1000917 | PREMIUM   |                0.79 |            1 |",
+    "detail": "**Subscription Metrics by Plan** (3 rows)\n\n| plan_id   |   total_subscriptions |   active_subscriptions |   cancelled_subscriptions | top_cancel_reason   |\n|:----------|----------------------:|-----------------------:|--------------------------:|:--------------------|\n| PREMIUM   |                  5000 |                   3800 |                      1200 | price               |\n| VIP       |                  3000 |                   2600 |                       400 | content             |\n| BASIC     |                  8000 |                   5500 |                      2500 | price               |\n\n**Churn Risk by Plan** (3 rows)\n\n| plan_id   |   total_users |   predicted_churners |   avg_churn_prob |\n|:----------|--------------:|---------------------:|-----------------:|\n| PREMIUM   |          5000 |                 1500 |             0.48 |\n| VIP       |          3000 |                  300 |             0.19 |\n| BASIC     |          8000 |                 3200 |             0.41 |",
     "tool_name": "",
     "tool_args": {},
     "sql": "",
