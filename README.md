@@ -231,42 +231,111 @@ existing API. Incremental migration beats big-bang refactors.
 
 ## Quickstart
 
-### Tests (no AWS required)
+### 1. Clone + create a virtual environment
 
 ```bash
-pip install -r requirements-dev.txt -r requirements-agent.txt
-python -m pytest tests/ai_agent -v
+git clone https://github.com/Dinesh0401/JioHotstar-Analytics-pipeline.git
+cd JioHotstar-Analytics-pipeline
+
+# Windows (PowerShell)
+python -m venv venv
+venv\Scripts\Activate.ps1
+
+# macOS / Linux
+python3 -m venv venv
+source venv/bin/activate
+```
+
+Python 3.11 is pinned (`.python-version`, `runtime.txt`).
+
+### 2. Install dependencies
+
+```bash
+pip install -r requirements.txt
+# Optional, only for running the test suite:
+pip install -r requirements-dev.txt
+```
+
+### 3. Force offline mode (recommended for local runs)
+
+The runtime tries Bedrock first if `BEDROCK_MODEL_ID` is set, and tries
+Athena first if AWS credentials are present. To guarantee deterministic
+behavior without touching the cloud — which is what the demo path is —
+set this **before** launching anything:
+
+```bash
+# Windows (PowerShell)
+$env:RUN_MODE = "offline"
+
+# macOS / Linux
+export RUN_MODE=offline
+```
+
+This makes `build_engine()` skip Bedrock and auto-apply the canned
+datasource so every tool call returns deterministic in-memory rows.
+Engine, brain, registry, and tools all still run for real — only the
+data is canned, so the reasoning trace is genuine.
+
+### 4. Verify the runtime headlessly first (fast)
+
+```bash
+python -m pytest tests/ai_agent -q
 # 59 passed
 ```
 
-### Try the reasoning runtime in the CLI
+Then the CLI smoke test — faster than booting Streamlit just to check
+the runtime is healthy:
 
 ```bash
 python -m ai_agent.cli --engine "compare churn risk across subscription plans"
-# Prints [think] / [tool ] / [obs ] / [final] events, then the answer.
-# Works offline — the badge will read `Brain: rule` when Bedrock is unreachable.
 ```
 
-### Launch the AI Command Center
+Expected output: streamed `[think]` / `[tool ]` / `[obs ]` / `[final]`
+lines, then an answer, then `Brain: rule | steps: 3`. If this works,
+the UI will work.
+
+### 5. Launch the AI Command Center
 
 ```bash
 streamlit run ai_agent/streamlit_app.py
-# Hero strip with a live mode badge (Bedrock vs rule), conversation column,
-# and a streamed vertical reasoning-trace column on the right.
 ```
 
-### Main analytics dashboard (with the AI Agent showcase section)
+Open <http://localhost:8501>. The hero badge should read **"🟡 Offline
+deterministic mode"**. Click any of the four sample question buttons —
+the reasoning trace streams in on the right as the loop runs.
+
+The reliable multi-step demo question is **"Compare churn risk across
+subscription plans"** — it chains `subscriptions` → `churn_risk` cleanly
+every time, offline. Use this one for recordings.
+
+### 6. Launch the main analytics dashboard (separate terminal)
 
 ```bash
 streamlit run dashboard/app.py
 ```
 
-### Generate / regenerate the demo trace fixtures
+Scroll to the AI Agent section to see a real serialised `Trace` replayed
+from `ai_agent/demo_traces/compare_churn_by_plan.json`.
+
+### 7. Generate / regenerate the demo trace fixtures (rarely needed)
 
 ```bash
 python -m ai_agent.build_demo_traces
 # Writes ai_agent/demo_traces/*.json — used by the dashboard's AI Agent section.
 ```
+
+### Troubleshooting
+
+| Symptom | Fix |
+|---|---|
+| `streamlit: command not found` | Activate the venv first (Step 1), then `pip install -r requirements.txt`. |
+| Hero badge says "Bedrock reasoning" but you didn't intend it | `BEDROCK_MODEL_ID` is set in your shell; set `RUN_MODE=offline` (Step 3) and restart. |
+| Hero badge says "Local rule planner" instead of "Offline deterministic mode" | `RUN_MODE` isn't set; the runtime works but tool observations show real-Athena errors. Set `RUN_MODE=offline` and restart. |
+| Trace shows `ERROR` observations | A tool's SQL doesn't substring-match any key in `ai_agent/demo_data.py`. Add the matching key + canned rows. |
+| Tests fail with `tabulate` ImportError | `pip install tabulate` (or reinstall requirements). |
+
+For the public Streamlit Cloud deploy, see
+[`docs/deployment-streamlit.md`](docs/deployment-streamlit.md).
 
 ---
 
