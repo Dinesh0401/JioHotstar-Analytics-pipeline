@@ -53,10 +53,11 @@ def _retry_once(fn):
 def _athena_query_once(sql: str) -> list[dict]:
     client = _get_athena_client()
     database = os.getenv("ATHENA_DATABASE", "jiohotstar_gold")
-    output = os.getenv(
-        "ATHENA_OUTPUT_LOCATION",
-        "s3://jiohotstar-lakehouse-868896905478/athena-results/",
-    )
+    output = os.getenv("ATHENA_OUTPUT_LOCATION")
+    if not output:
+        raise DataSourceError(
+            "ATHENA_OUTPUT_LOCATION must be set to an S3 URI for Athena query results."
+        )
     resp = client.start_query_execution(
         QueryString=sql,
         QueryExecutionContext={"Database": database},
