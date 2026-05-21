@@ -24,11 +24,11 @@
   {
     "kind": "observation",
     "title": "top_content result",
-    "detail": "**Most Watched Content** (3 rows)\n\n| title              | content_type   |   total_views |   unique_viewers |\n|:-------------------|:---------------|--------------:|-----------------:|\n| World Cup Final    | Sports         |         98000 |            71000 |\n| Mystery Manor S2   | Series         |         62000 |            48000 |\n| Cricket Highlights | Sports         |         55000 |            41000 |",
+    "detail": "**Most Watched Content** (10 rows)\n\n| title                           | content_type   |   total_views |   unique_viewers |\n|:--------------------------------|:---------------|--------------:|-----------------:|\n| World Cup Final 2024            | Sports         |      12450000 |          8420000 |\n| IPL Final 2025                  | Sports         |       9820000 |          7110000 |\n| Pathaan                         | Movie          |       5410000 |          4790000 |\n| Mumbai Diaries S2               | Series         |       4250000 |          2890000 |\n| Animal                          | Movie          |       3820000 |          3480000 |\n| The Family Man S3               | Series         |       3610000 |          2620000 |\n| Jawan                           | Movie          |       3380000 |          3020000 |\n| Champions Trophy Highlights     | Sports         |       3140000 |          2410000 |\n| Panchayat S3                    | Series         |       2840000 |          1920000 |\n| Rocky Aur Rani Kii Prem Kahaani | Movie          |       2510000 |          2220000 |",
     "tool_name": "",
     "tool_args": {},
     "sql": "SELECT title, content_type, total_views, unique_viewers FROM content_watch_metrics ORDER BY total_views DESC LIMIT 10",
-    "duration_ms": 1,
+    "duration_ms": 2,
     "status": "ok",
     "step_index": 1
   },
@@ -46,7 +46,7 @@
   {
     "kind": "final",
     "title": "Answer ready",
-    "detail": "**Most Watched Content** (3 rows)\n\n| title              | content_type   |   total_views |   unique_viewers |\n|:-------------------|:---------------|--------------:|-----------------:|\n| World Cup Final    | Sports         |         98000 |            71000 |\n| Mystery Manor S2   | Series         |         62000 |            48000 |\n| Cricket Highlights | Sports         |         55000 |            41000 |",
+    "detail": "**Most Watched Content** (10 rows)\n\n| title                           | content_type   |   total_views |   unique_viewers |\n|:--------------------------------|:---------------|--------------:|-----------------:|\n| World Cup Final 2024            | Sports         |      12450000 |          8420000 |\n| IPL Final 2025                  | Sports         |       9820000 |          7110000 |\n| Pathaan                         | Movie          |       5410000 |          4790000 |\n| Mumbai Diaries S2               | Series         |       4250000 |          2890000 |\n| Animal                          | Movie          |       3820000 |          3480000 |\n| The Family Man S3               | Series         |       3610000 |          2620000 |\n| Jawan                           | Movie          |       3380000 |          3020000 |\n| Champions Trophy Highlights     | Sports         |       3140000 |          2410000 |\n| Panchayat S3                    | Series         |       2840000 |          1920000 |\n| Rocky Aur Rani Kii Prem Kahaani | Movie          |       2510000 |          2220000 |",
     "tool_name": "",
     "tool_args": {},
     "sql": "",
