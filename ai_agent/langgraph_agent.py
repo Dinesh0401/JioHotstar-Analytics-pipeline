@@ -8,6 +8,16 @@ from __future__ import annotations
 
 import os
 
+# Local-dev convenience: pick up AWS / Bedrock / Athena config from .env.local
+# if python-dotenv is installed. override=False so any real environment
+# variable (Streamlit Cloud secrets, EC2 IAM env, CI env) wins.
+try:
+    from dotenv import load_dotenv
+
+    load_dotenv(".env.local", override=False)
+except ImportError:  # pragma: no cover — optional dependency
+    pass
+
 from ai_agent.analytics_tools import build_default_registry
 from ai_agent.brains import BedrockBrain, RuleBrain
 from ai_agent.reasoning import EngineResult, ReasoningEngine
