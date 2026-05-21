@@ -24,11 +24,11 @@
   {
     "kind": "observation",
     "title": "subscriptions result",
-    "detail": "**Subscription Metrics by Plan** (3 rows)\n\n| plan_id   |   total_subscriptions |   active_subscriptions |   cancelled_subscriptions | top_cancel_reason   |\n|:----------|----------------------:|-----------------------:|--------------------------:|:--------------------|\n| PREMIUM   |                  5000 |                   3800 |                      1200 | price               |\n| VIP       |                  3000 |                   2600 |                       400 | content             |\n| BASIC     |                  8000 |                   5500 |                      2500 | price               |",
+    "detail": "**Subscription Metrics by Plan** (6 rows)\n\n| plan_id   |   total_subscriptions |   active_subscriptions |   cancelled_subscriptions | top_cancel_reason   |\n|:----------|----------------------:|-----------------------:|--------------------------:|:--------------------|\n| FREE      |              12480000 |                8210000 |                   4270000 | ads                 |\n| MOBILE    |               8210000 |                6540000 |                   1670000 | price               |\n| BASIC     |               6040000 |                4810000 |                   1230000 | price               |\n| PREMIUM   |               4530000 |                3920000 |                    610000 | content             |\n| VIP       |               1210000 |                1100000 |                    110000 | quality             |\n| FAMILY    |                812000 |                 725000 |                     87000 | features            |",
     "tool_name": "",
     "tool_args": {},
     "sql": "SELECT plan_id, total_subscriptions, active_subscriptions, cancelled_subscriptions, top_cancel_reason FROM subscription_metrics ORDER BY total_subscriptions DESC",
-    "duration_ms": 20,
+    "duration_ms": 17,
     "status": "ok",
     "step_index": 1
   },
@@ -59,7 +59,7 @@
   {
     "kind": "observation",
     "title": "churn_risk result",
-    "detail": "**Churn Risk by Plan** (3 rows)\n\n| plan_id   |   total_users |   predicted_churners |   avg_churn_prob |\n|:----------|--------------:|---------------------:|-----------------:|\n| PREMIUM   |          5000 |                 1500 |             0.48 |\n| VIP       |          3000 |                  300 |             0.19 |\n| BASIC     |          8000 |                 3200 |             0.41 |",
+    "detail": "**Churn Risk by Plan** (6 rows)\n\n| plan_id   |   total_users |   predicted_churners |   avg_churn_prob |\n|:----------|--------------:|---------------------:|-----------------:|\n| FREE      |      12480000 |              6864000 |             0.55 |\n| MOBILE    |       8210000 |              2627000 |             0.32 |\n| BASIC     |       6040000 |              1691000 |             0.28 |\n| FAMILY    |        812000 |               106000 |             0.13 |\n| PREMIUM   |       4530000 |               815000 |             0.18 |\n| VIP       |       1210000 |               121000 |             0.1  |",
     "tool_name": "",
     "tool_args": {},
     "sql": "SELECT plan_id, COUNT(*) AS total_users, SUM(CASE WHEN prediction = 1 THEN 1 ELSE 0 END) AS predicted_churners, ROUND(AVG(churn_probability), 4) AS avg_churn_prob FROM user_churn_prediction GROUP BY plan_id ORDER BY avg_churn_prob DESC",
@@ -81,7 +81,7 @@
   {
     "kind": "final",
     "title": "Answer ready",
-    "detail": "**Subscription Metrics by Plan** (3 rows)\n\n| plan_id   |   total_subscriptions |   active_subscriptions |   cancelled_subscriptions | top_cancel_reason   |\n|:----------|----------------------:|-----------------------:|--------------------------:|:--------------------|\n| PREMIUM   |                  5000 |                   3800 |                      1200 | price               |\n| VIP       |                  3000 |                   2600 |                       400 | content             |\n| BASIC     |                  8000 |                   5500 |                      2500 | price               |\n\n**Churn Risk by Plan** (3 rows)\n\n| plan_id   |   total_users |   predicted_churners |   avg_churn_prob |\n|:----------|--------------:|---------------------:|-----------------:|\n| PREMIUM   |          5000 |                 1500 |             0.48 |\n| VIP       |          3000 |                  300 |             0.19 |\n| BASIC     |          8000 |                 3200 |             0.41 |",
+    "detail": "**Subscription Metrics by Plan** (6 rows)\n\n| plan_id   |   total_subscriptions |   active_subscriptions |   cancelled_subscriptions | top_cancel_reason   |\n|:----------|----------------------:|-----------------------:|--------------------------:|:--------------------|\n| FREE      |              12480000 |                8210000 |                   4270000 | ads                 |\n| MOBILE    |               8210000 |                6540000 |                   1670000 | price               |\n| BASIC     |               6040000 |                4810000 |                   1230000 | price               |\n| PREMIUM   |               4530000 |                3920000 |                    610000 | content             |\n| VIP       |               1210000 |                1100000 |                    110000 | quality             |\n| FAMILY    |                812000 |                 725000 |                     87000 | features            |\n\n**Churn Risk by Plan** (6 rows)\n\n| plan_id   |   total_users |   predicted_churners |   avg_churn_prob |\n|:----------|--------------:|---------------------:|-----------------:|\n| FREE      |      12480000 |              6864000 |             0.55 |\n| MOBILE    |       8210000 |              2627000 |             0.32 |\n| BASIC     |       6040000 |              1691000 |             0.28 |\n| FAMILY    |        812000 |               106000 |             0.13 |\n| PREMIUM   |       4530000 |               815000 |             0.18 |\n| VIP       |       1210000 |               121000 |             0.1  |",
     "tool_name": "",
     "tool_args": {},
     "sql": "",
