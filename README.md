@@ -4,6 +4,8 @@ A media-streaming analytics platform that takes raw viewing events all the way
 to a bounded, observable AI reasoning runtime that can answer multi-step
 analytics questions in natural language.
 
+<img width="1082" height="538" alt="image" src="https://github.com/user-attachments/assets/823c21da-5843-4663-bc0b-521a02d0c7b0" />
+
 The repo is structured around three layers built on top of each other:
 
 1. **Data engineering** — a Medallion lakehouse (Bronze → Silver → Gold) on
