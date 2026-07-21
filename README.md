@@ -1,540 +1,513 @@
- # JioHotstar Media-Streaming Analytics 
+# 🎬 JioHotstar Media Streaming Analytics Platform
 
-# 🎬 AI-Powered Streaming Analytics Platform
-### Production-Style Data Engineering + MLOps + AI Agent using AWS, Spark, Kafka & Bedrock
+### Production-Scale Data Engineering, Analytics, AI Agent & MLOps Platform
 
+*A complete end-to-end streaming analytics platform inspired by modern OTT companies such as **JioHotstar, Netflix, and Disney+**, built using **Apache Spark, Kafka, Delta Lake, Airflow, AWS, Machine Learning, and Generative AI.***
 
-<img width="1693" height="929" alt="ChatGPT Image Jul 21, 2026, 02_55_10 PM" src="https://github.com/user-attachments/assets/5cb443e4-9055-419d-a9be-18f1f083f2a3" />
-
-
-
-# Overview
-
-This project simulates the backend data platform of a large OTT streaming company such as Netflix, Disney+, or JioHotstar.
-
-Instead of building only machine learning models, this project demonstrates how modern enterprise data systems collect, process, analyze, predict, and explain business insights using an AI Agent.
-
-The platform combines
-
-- Data Engineering
-- Medallion Lakehouse
-- Real-time Streaming
-- Machine Learning
-- AI Agents
-- AWS Cloud
-- Interactive Dashboards
-
-into one complete production-style architecture.
+<img width="1693" height="929" alt="ChatGPT Image Jul 21, 2026, 03_20_06 PM" src="https://github.com/user-attachments/assets/26465dbf-455b-406f-ae85-8e926950cae5" />
 
 ---
 
-# Business Problem
+## 📖 Overview
 
-Streaming platforms generate millions of events every day.
+Modern streaming platforms generate millions of user interactions every day.
 
-Examples include
+Every play, pause, search, rating, subscription purchase, and watch completion produces valuable business data.
 
-- User logins
-- Video plays
-- Watch duration
-- Ratings
-- Subscription purchases
-- Search history
-- Device information
-- Campaign clicks
+This project demonstrates how an enterprise OTT platform collects, processes, analyzes, predicts, and explains these events using a modern **Lakehouse + AI Agent architecture**.
 
-Business teams need answers like
+Unlike traditional ML projects that only train models, this project covers the **complete data lifecycle**:
 
-- Why are users cancelling subscriptions?
-- Which content is trending?
-- Which users are likely to churn?
-- Which plan generates maximum revenue?
-- What should be recommended next?
-
-Instead of manually running SQL queries, an AI Agent automatically understands business questions and retrieves answers from analytics tables and ML models.
+* Data Engineering
+* Real-time Streaming
+* Medallion Lakehouse
+* Analytics Engineering
+* Machine Learning
+* AI Reasoning
+* Cloud Deployment
+* Interactive Analytics
 
 ---
 
-# High Level Architecture
+# 🎯 Business Problem
 
-Event Generator
+An OTT platform receives millions of events every day.
 
-↓
+Examples include:
 
-Kafka Streaming
+* User Login
+* Content Playback
+* Watch Duration
+* Search Queries
+* Ratings & Reviews
+* Subscription Purchase
+* Plan Renewal
+* Campaign Clicks
+* Device Information
 
-↓
+Business teams constantly ask questions such as:
 
-Spark Bronze Layer
+* Which content is trending?
+* Which subscription plan generates the highest revenue?
+* Which users are likely to cancel?
+* Which genres are becoming popular?
+* What should be recommended next?
+* Why has user engagement decreased?
 
-↓
-
-Spark Silver Layer
-
-↓
-
-Spark Gold Analytics Layer
-
-↓
-
-Machine Learning Models
-
-↓
-
-Athena + PostgreSQL
-
-↓
-
-AI Reasoning Runtime
-
-↓
-
-Streamlit Dashboard / FastAPI / CLI
+Instead of manually querying multiple databases, an AI Agent automatically understands business questions, retrieves analytics from curated data, and generates explainable insights.
 
 ---
 
-# Technology Stack
+# 🏗 Architecture
+
+```
+Streaming Applications
+        │
+        ▼
+   Kafka Event Streaming
+        │
+        ▼
+ Spark Bronze Layer (Raw)
+        │
+        ▼
+ Spark Silver Layer (Validated)
+        │
+        ▼
+ Spark Gold Layer (Business Analytics)
+        │
+        ├──────────────┐
+        ▼              ▼
+ Machine Learning   Athena Analytics
+        │              │
+        └──────┬───────┘
+               ▼
+        AI Reasoning Runtime
+               │
+   ┌───────────┼────────────┐
+   ▼           ▼            ▼
+Streamlit   FastAPI API     CLI
+```
+
+---
+
+# 🚀 Technology Stack
 
 ## Cloud
 
-- AWS S3
-- AWS Athena
-- Amazon Bedrock
-- IAM
+* AWS S3
+* AWS Athena
+* Amazon Bedrock
+* IAM
 
 ---
 
 ## Data Engineering
 
-- Apache Spark
-- Delta Lake
-- Apache Kafka
-- Apache Airflow
+* Apache Spark
+* Delta Lake
+* Apache Kafka
+* Apache Airflow
 
 ---
 
 ## Machine Learning
 
-- Scikit-learn
-- Random Forest
-- ALS Recommendation Engine
-
----
-
-## Backend
-
-- Python
-- FastAPI
+* Scikit-Learn
+* Random Forest
+* Spark MLlib ALS Recommendation Engine
 
 ---
 
 ## AI
 
-- LangGraph
-- Amazon Bedrock
-- Tool Calling
-- AI Agent
-- Rule Engine
+* LangGraph
+* Amazon Bedrock
+* ReAct Agent
+* Tool Calling
+* Rule Engine
+
+---
+
+## Backend
+
+* Python
+* FastAPI
 
 ---
 
 ## Storage
 
-- PostgreSQL
-- Delta Lake
-- S3
+* Delta Lake
+* Amazon S3
+* PostgreSQL (metadata & runtime information)
 
 ---
 
-## Frontend
+## Visualization
 
-- Streamlit
-
----
-
-# Project Workflow
-
-## Phase 1
-
-Data Generation
-
-Synthetic streaming data is generated for
-
-- Users
-- Subscriptions
-- Ratings
-- Content
-- Events
-- Campaigns
-
-These simulate production traffic.
+* Streamlit
+* Plotly
 
 ---
 
-## Phase 2
+# 🔄 Project Workflow
 
-Kafka Streaming
+## Phase 1 — Synthetic Data Generation
 
-User events are continuously published into Kafka.
+Generate realistic OTT datasets including:
 
-Examples
+* Users
+* Content Catalog
+* Ratings
+* Subscription Plans
+* Viewing Events
+* Marketing Campaigns
 
-- Watch Started
-- Pause
-- Completed
-- Search
-- Subscription Purchased
-
----
-
-## Phase 3
-
-Bronze Layer
-
-Spark Streaming consumes Kafka messages.
-
-Raw events are stored without modification inside Delta Lake Bronze tables.
-
-Purpose
-
-- Raw backup
-- Audit
-- Replay capability
+These datasets simulate production-scale streaming traffic.
 
 ---
 
-## Phase 4
+## Phase 2 — Real-Time Event Streaming
 
-Silver Layer
+User activity is continuously streamed through Kafka.
 
-Spark performs
+Examples:
 
-- Data Cleaning
-- Schema Validation
-- Null Handling
-- Deduplication
-- Type Conversion
-- Business Rules
-- Quality Checks
+* Play
+* Pause
+* Resume
+* Watch Complete
+* Search
+* Subscription Purchase
 
-Output becomes trusted datasets.
-
----
-
-## Phase 5
-
-Gold Layer
-
-Business analytics tables are created.
-
-Examples
-
-- Daily Active Users
-- User Engagement
-- Subscription Metrics
-- Genre Popularity
-- Content Ratings
-- Watch Statistics
-
-These tables are optimized for dashboards and AI queries.
+Kafka acts as the real-time event bus.
 
 ---
 
-## Phase 6
+## Phase 3 — Bronze Layer
 
-Machine Learning
+Spark Streaming consumes Kafka topics.
 
-Three ML systems are trained.
+The Bronze layer stores:
+
+* Raw events
+* Original schema
+* Immutable records
+
+Purpose:
+
+* Data replay
+* Auditing
+* Disaster recovery
+
+---
+
+## Phase 4 — Silver Layer
+
+Spark transforms raw data into trusted datasets.
+
+Operations include:
+
+* Schema validation
+* Null handling
+* Duplicate removal
+* Type conversion
+* Data enrichment
+* Business rule validation
+* Quality checks
+
+Result:
+
+Clean, standardized data ready for analytics.
+
+---
+
+## Phase 5 — Gold Layer
+
+Business-ready analytics tables are generated.
+
+Examples include:
+
+* Daily Active Users
+* Watch Time Analytics
+* Subscription Metrics
+* Genre Popularity
+* User Engagement
+* Content Rating Summary
+
+These optimized tables power dashboards, reports, ML models, and AI tools.
+
+---
+
+## Phase 6 — Machine Learning
+
+Analytics tables are used to train predictive models.
 
 ### Customer Churn Prediction
 
-Algorithm
+Algorithm:
 
 Random Forest
 
-Predicts
-
-Probability that a customer cancels subscription.
+Predicts users likely to cancel subscriptions.
 
 ---
 
 ### Content Popularity Prediction
 
-Algorithm
+Algorithm:
 
 Random Forest
 
-Predicts
-
-Future trending content.
+Forecasts future trending content.
 
 ---
 
-### Recommendation System
+### Personalized Recommendation Engine
 
-Algorithm
+Algorithm:
 
-ALS Collaborative Filtering
+ALS Collaborative Filtering (Spark MLlib)
 
-Recommends personalized content.
+Recommends personalized content based on user behavior.
 
-Predictions are written back into Gold tables.
-
----
-
-## Phase 7
-
-Storage Layer
-
-Business analytics tables
-
-↓
-
-AWS Athena
-
-Machine learning outputs
-
-↓
-
-PostgreSQL
-
-The AI Agent reads from both systems.
+Model predictions are written back into Gold tables.
 
 ---
 
-## Phase 8
+## Phase 7 — Analytics Layer
 
-AI Reasoning Runtime
+Curated analytics are queried using:
 
-The AI Agent receives natural language questions.
+* Amazon Athena
+* PostgreSQL (metadata and runtime information)
 
-Example
-
-"Why is Premium churn increasing?"
-
-The reasoning engine
-
-1. Understands the question
-
-2. Chooses required analytics tools
-
-3. Executes SQL
-
-4. Retrieves ML predictions
-
-5. Collects evidence
-
-6. Produces business explanation
-
-The agent follows a
-
-Plan
-
-↓
-
-Act
-
-↓
-
-Observe
-
-↓
-
-Reason
-
-workflow.
+This enables fast analytical queries without directly accessing raw datasets.
 
 ---
 
-# AI Components
+## Phase 8 — AI Reasoning Runtime
+
+The AI Agent accepts natural language questions such as:
+
+> "Why is Premium subscription churn increasing?"
+
+The reasoning engine performs:
+
+1. Understand the question
+2. Select relevant tools
+3. Generate SQL
+4. Query Athena
+5. Retrieve ML predictions
+6. Combine evidence
+7. Generate business insights
+8. Return explainable results
+
+Reasoning follows the **ReAct (Reason → Act → Observe)** pattern.
+
+---
+
+# 🤖 AI Components
 
 ## Tool Registry
 
-Contains strongly typed business tools such as
+The agent contains domain-specific analytics tools, including:
 
-- Churn Analytics
-- Revenue Analytics
-- Content Analytics
-- Recommendation Analytics
-- SQL Query Tool
-- User Analytics
+* Subscription Analytics
+* User Analytics
+* Revenue Analytics
+* Churn Analytics
+* Content Analytics
+* Recommendation Analytics
+* SQL Query Tool
+* KPI Retrieval
+* Metadata Lookup
 
-The AI dynamically selects tools.
+The LLM dynamically selects the appropriate tools for each business question.
 
 ---
 
 ## Bedrock Brain
 
-LLM powered reasoning.
+Powered by Amazon Bedrock.
 
-Responsibilities
+Responsibilities:
 
-- Natural Language Understanding
-- Tool Selection
-- Explanation Generation
-- Business Insights
+* Natural language understanding
+* Business reasoning
+* Tool selection
+* Insight generation
 
 ---
 
-## Rule Brain
+## Rule Engine
 
-Rule-based deterministic engine.
+Handles deterministic business logic.
 
-Responsibilities
+Examples:
 
-- SQL Validation
-- Business Constraints
-- Guardrails
-- Offline Decision Making
+* SQL validation
+* Business constraints
+* Guardrails
+* Fallback execution
 
 ---
 
 ## Trace Engine
 
-Every reasoning step is recorded.
+Every AI interaction produces a structured execution trace.
 
-Each trace stores
+Each trace records:
 
-- User Question
-- Selected Tools
-- SQL Executed
-- Tool Outputs
-- Final Answer
+* User question
+* Selected tools
+* SQL queries
+* Tool outputs
+* Intermediate reasoning
+* Final response
 
-This makes the AI Agent explainable and reproducible.
-
----
-
-# Dashboard
-
-The Streamlit application displays
-
-- User Analytics
-- Revenue Metrics
-- Churn Prediction
-- Recommendation Results
-- AI Reasoning Trace
-- Business KPIs
+This makes AI decisions transparent, reproducible, and auditable.
 
 ---
 
-# FastAPI
+# 📊 Dashboard
 
-FastAPI exposes REST APIs for
+The Streamlit dashboard provides:
 
-- Ask AI
-- Execute Analytics
-- Retrieve Predictions
-- Query Business Metrics
+* User Analytics
+* Revenue Metrics
+* Content Performance
+* Churn Predictions
+* Recommendations
+* AI Chat Assistant
+* Execution Traces
+* Business KPIs
 
 ---
 
-# Folder Structure
+# ⚡ FastAPI
 
-```
+REST APIs expose:
+
+* AI Question Answering
+* Business Analytics
+* ML Predictions
+* Recommendation Results
+* KPI Retrieval
+
+---
+
+# 📂 Project Structure
+
+```text
 data_generation/
-    Generate demo datasets
+    Synthetic OTT dataset generation
 
 spark/
-    Bronze
-    Silver
-    Gold
+    Bronze/
+    Silver/
+    Gold/
 
 dags/
-    Airflow orchestration
+    Apache Airflow workflows
 
 ai_agent/
-    AI reasoning runtime
+    AI reasoning engine
+    Tool registry
+    Bedrock integration
+    Trace engine
 
 dashboard/
     Streamlit dashboard
 
-config/
-    Configuration
-
 infra/
-    AWS deployment
+    AWS infrastructure
 
 docker/
     Docker deployment
 
 tests/
-    Unit tests
+    Unit & integration tests
 
 docs/
-    Design documents
+    Architecture & design documents
 ```
 
 ---
 
-# Key Features
+# ✨ Key Features
 
-✔ Production-style Medallion Lakehouse
-
-✔ Kafka Real-time Streaming
-
-✔ Apache Spark ETL
-
-✔ Delta Lake
-
-✔ Airflow Orchestration
-
-✔ Machine Learning Pipeline
-
-✔ Recommendation Engine
-
-✔ AI Agent with Tool Calling
-
-✔ Amazon Bedrock Integration
-
-✔ Athena Analytics
-
-✔ PostgreSQL
-
-✔ Streamlit Dashboard
-
-✔ FastAPI Backend
-
-✔ Explainable AI Traces
+* Production-style Medallion Lakehouse
+* Apache Kafka Streaming
+* Apache Spark ETL Pipelines
+* Delta Lake Storage
+* Apache Airflow Orchestration
+* Feature Engineering
+* ML Prediction Pipelines
+* Recommendation System
+* AI Agent with LangGraph
+* Amazon Bedrock Integration
+* Athena SQL Analytics
+* Streamlit Dashboard
+* FastAPI Services
+* Explainable AI Tracing
+* Modular & Scalable Architecture
 
 ---
 
-# Resume Highlights
+# 📄 Resume Highlights
 
-• Designed an end-to-end Medallion Lakehouse architecture using Apache Spark, Delta Lake, Kafka, and AWS S3.
-
-• Built scalable ETL pipelines orchestrated using Apache Airflow.
-
-• Developed ML models for churn prediction, content popularity prediction, and personalized recommendations.
-
-• Implemented an AI Agent using LangGraph and Amazon Bedrock capable of reasoning over business analytics through dynamic tool calling.
-
-• Integrated Athena and PostgreSQL as analytical query engines for AI-assisted decision making.
-
-• Built interactive dashboards using Streamlit and REST APIs using FastAPI.
-
-• Implemented explainable AI tracing to record reasoning steps, tool execution, SQL queries, and final responses for reproducibility.
+* Designed and implemented an end-to-end Medallion Lakehouse architecture using Apache Spark, Delta Lake, Kafka, and AWS S3.
+* Built real-time streaming ETL pipelines orchestrated with Apache Airflow.
+* Developed predictive models for customer churn, content popularity, and personalized recommendations using Scikit-Learn and Spark MLlib.
+* Engineered an AI-powered analytics assistant using LangGraph and Amazon Bedrock capable of answering business questions through dynamic tool calling.
+* Integrated Amazon Athena for SQL analytics over Delta Lake and PostgreSQL for runtime metadata management.
+* Developed interactive dashboards with Streamlit and REST APIs using FastAPI.
+* Implemented explainable AI tracing to capture reasoning steps, SQL execution, tool invocations, and final responses for auditability.
 
 ---
 
-# Learning Outcomes
+# 🎓 Learning Outcomes
 
-This project demonstrates practical knowledge of
+This project demonstrates hands-on experience with:
 
-- Data Engineering
-- ETL Pipelines
-- Lakehouse Architecture
-- Streaming Systems
-- Machine Learning
-- Recommendation Systems
-- AI Agents
-- Cloud Architecture
-- MLOps
-- Analytics Engineering
-- Production System Design
+* Data Engineering
+* Batch & Streaming ETL
+* Medallion Lakehouse Architecture
+* Apache Spark
+* Apache Kafka
+* Delta Lake
+* Data Quality Engineering
+* Analytics Engineering
+* Machine Learning Pipelines
+* Recommendation Systems
+* AI Agents
+* LangGraph
+* Amazon Bedrock
+* Cloud Data Platforms
+* MLOps Fundamentals
+* Production System Design
 
-## Tech stack
+---
 
-Python 3.10 · pandas · Apache Spark + Delta Lake · Apache Kafka · Apache
-Airflow · PostgreSQL · AWS S3 · AWS Athena · AWS Bedrock · FastAPI · Streamlit
-· Plotly · pytest.
+# 🛠 Tech Stack
+
+**Languages:** Python 3.10+
+
+**Data Engineering:** Apache Spark, Delta Lake, Apache Kafka, Apache Airflow
+
+**Machine Learning:** Scikit-Learn, Spark MLlib (ALS)
+
+**Cloud:** AWS S3, Amazon Athena, Amazon Bedrock, IAM
+
+**Storage:** Delta Lake, PostgreSQL
+
+**Backend:** FastAPI
+
+**Frontend:** Streamlit, Plotly
+
+**Testing:** pytest
+
+---
+
+This version is much closer to what a senior data engineer or ML engineer would expect to see on GitHub. It aligns with your architecture diagram and is suitable to discuss confidently in interviews.
