@@ -4,7 +4,8 @@ A media-streaming analytics platform that takes raw viewing events all the way
 to a bounded, observable AI reasoning runtime that can answer multi-step
 analytics questions in natural language.
 
-<img width="1082" height="538" alt="image" src="https://github.com/user-attachments/assets/823c21da-5843-4663-bc0b-521a02d0c7b0" />
+<img width="1693" height="929" alt="ChatGPT Image Jul 21, 2026, 02_55_10 PM" src="https://github.com/user-attachments/assets/5cb443e4-9055-419d-a9be-18f1f083f2a3" />
+
 
 The repo is structured around three layers built on top of each other:
 
