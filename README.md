@@ -1,7 +1,5 @@
 # 🎬 JioHotstar Media Streaming Analytics Platform
 
-### Production-Scale Data Engineering, Analytics, AI Agent & MLOps Platform
-
 *A complete end-to-end streaming analytics platform inspired by modern OTT companies such as **JioHotstar, Netflix, and Disney+**, built using **Apache Spark, Kafka, Delta Lake, Airflow, AWS, Machine Learning, and Generative AI.***
 
 <img width="1693" height="929" alt="ChatGPT Image Jul 21, 2026, 03_20_06 PM" src="https://github.com/user-attachments/assets/26465dbf-455b-406f-ae85-8e926950cae5" />
